@@ -1,0 +1,9 @@
+{
+  "ai": {
+    "docs": {
+      "include": [
+        ".ai/docs/**/*.mdc"
+      ]
+    }
+  }
+} 

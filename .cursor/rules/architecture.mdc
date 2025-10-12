@@ -1,0 +1,351 @@
+---
+description: MVVM architecture patterns, layer responsibilities, and dependency injection rules
+alwaysApply: true
+---
+
+# Architecture Rules
+
+## Overview
+LiveAssistant follows MVVM with Repository pattern and dependency injection using Swinject.
+
+## Architecture Flow
+```
+View → ViewModel → Repository → Service
+```
+
+## Layer Responsibilities
+
+### View Layer (SwiftUI)
+**MUST:**
+- Only contain SwiftUI views and components
+- Observe ViewModels for state changes
+- Use declarative UI patterns
+- Place reusable components in `Components/` subdirectories
+
+**MUST NOT:**
+- Contain business logic
+- Access Services or Repositories directly
+- Perform data operations
+
+### ViewModel Layer
+**MUST:**
+- Use `@Observable` macro for state observation
+- Use `@MainActor` for UI-related ViewModels
+- Keep state properties as `private(set)`
+- Inject dependencies via protocol-based initializers
+- Use Repositories (not Services) for data access
+- Handle user actions and transform data for Views
+- Coordinate between multiple repositories if needed
+
+**MUST NOT:**
+- Have direct dependencies on SwiftUI
+- Access Services directly (use Repositories)
+- Use `@ObservableObject` (outdated pattern)
+- Allow external state mutation
+
+**Example Structure:**
+```swift
+@Observable
+@MainActor
+final class ChatViewModel {
+    private let chatRepository: ChatRepositoryProtocol
+    private(set) var messages: [Message] = []
+    private(set) var isLoading = false
+    
+    init(chatRepository: ChatRepositoryProtocol) {
+        self.chatRepository = chatRepository
+    }
+    
+    func loadMessages() async throws {
+        isLoading = true
+        defer { isLoading = false }
+        messages = try await chatRepository.fetchMessages()
+    }
+}
+```
+
+### Repository Layer
+**MUST:**
+- Define protocol-based interfaces
+- Abstract away data source details (SwiftData, network, etc.)
+- Coordinate between multiple services
+- Transform service data to domain models
+- Handle caching and data consistency
+- Contain business logic
+
+**MUST NOT:**
+- Expose implementation details to ViewModels
+- Hardcode data sources
+
+**Example Structure:**
+```swift
+protocol ChatRepositoryProtocol: Sendable {
+    func fetchMessages() async throws -> [Message]
+    func sendMessage(_ content: String) async throws -> Message
+}
+
+final class ChatRepository: ChatRepositoryProtocol {
+    private let apiService: APIServiceProtocol
+    private let storageService: StorageServiceProtocol
+    
+    init(apiService: APIServiceProtocol, storageService: StorageServiceProtocol) {
+        self.apiService = apiService
+        self.storageService = storageService
+    }
+    
+    func fetchMessages() async throws -> [Message] {
+        // Business logic: Try cache first, then network
+        if let cached = try? await storageService.fetchMessages() {
+            return cached
+        }
+        let messages = try await apiService.getMessages()
+        try await storageService.saveMessages(messages)
+        return messages
+    }
+}
+```
+
+### Service Layer
+**MUST:**
+- Provide protocol-based interfaces for testability
+- Handle external interactions:
+  - API clients (networking)
+  - SwiftData model operations
+  - AI/ML service integrations
+  - System integrations (audio, permissions)
+
+**MUST NOT:**
+- Contain business logic (that belongs in Repositories)
+- Be accessed directly from ViewModels
+
+## Dependency Injection (Swinject)
+
+### Container Setup
+**MUST:**
+- Register all dependencies in `App/DI/AppComponent.swift`
+- Use `.inObjectScope(.container)` for singletons
+- Register protocols, not concrete types
+- Group registrations by layer (Services → Repositories → ViewModels)
+
+**Example:**
+```swift
+final class AppComponent {
+    static let shared = AppComponent()
+    let container = Container()
+    
+    private init() {
+        registerServices()
+        registerRepositories()
+        registerViewModels()
+    }
+    
+    private func registerServices() {
+        container.register(APIServiceProtocol.self) { _ in
+            APIService()
+        }.inObjectScope(.container)
+    }
+    
+    private func registerRepositories() {
+        container.register(ChatRepositoryProtocol.self) { resolver in
+            ChatRepository(
+                apiService: resolver.resolve(APIServiceProtocol.self)!,
+                storageService: resolver.resolve(StorageServiceProtocol.self)!
+            )
+        }
+    }
+}
+```
+
+### Using DI in Views
+```swift
+struct ChatView: View {
+    @State private var vm: ChatViewModel
+    
+    init(vm: ChatViewModel = AppComponent.shared.container.resolve(ChatViewModel.self)!) {
+        self.vm = vm
+    }
+}
+```
+
+## SwiftData Integration
+
+**MUST:**
+- Define SwiftData models in `Core/Models/`
+- Access SwiftData only through Repository layer
+- Use `@Model` macro for SwiftData entities
+
+**MUST NOT:**
+- Access SwiftData directly from ViewModels
+- Mix SwiftData implementation details into business logic
+
+## Async/Await Patterns
+
+**MUST:**
+- Use async/await for all asynchronous operations
+- Use `@MainActor` for UI updates in ViewModels
+- Handle errors with specific error types
+- Use `.task {}` modifier in views for async operations
+
+**Example:**
+```swift
+// In ViewModel
+@MainActor
+func loadData() async {
+    do {
+        isLoading = true
+        let data = try await repository.fetchData()
+        self.data = data
+    } catch {
+        self.error = error
+    }
+    isLoading = false
+}
+
+// In View
+.task {
+    await vm.loadData()
+}
+```
+
+## Error Handling
+
+**MUST:**
+- Use specific error types conforming to `LocalizedError`
+- Provide localized error descriptions using `NSLocalizedString`
+- Handle errors gracefully in ViewModels
+
+**Example:**
+```swift
+enum ChatError: LocalizedError {
+    case networkFailure
+    case invalidResponse
+    case unauthorized
+    
+    var errorDescription: String? {
+        switch self {
+        case .networkFailure:
+            return NSLocalizedString("network.error.failure", comment: "")
+        case .invalidResponse:
+            return NSLocalizedString("network.error.invalid_response", comment: "")
+        case .unauthorized:
+            return NSLocalizedString("auth.error.unauthorized", comment: "")
+        }
+    }
+}
+```
+
+## Project Structure Convention
+
+**Feature Module Structure:**
+```
+Features/
+└── FeatureName/
+    ├── Views/
+    │   └── FeatureView.swift
+    ├── ViewModels/
+    │   └── FeatureViewModel.swift
+    └── Components/
+        └── FeatureComponent.swift
+```
+
+**Core Structure:**
+```
+Core/
+├── Models/              # Domain models & SwiftData entities
+├── Services/
+│   ├── Protocols/       # Service interfaces
+│   └── Implementations/ # Service implementations
+├── Repositories/
+│   ├── Protocols/       # Repository interfaces
+│   └── Implementations/ # Repository implementations
+└── Utilities/           # Extensions, helpers
+```
+
+## Best Practices Summary
+
+### Do's ✅
+- Use `@Observable` and `@MainActor` for ViewModels
+- Define protocol-based interfaces for all dependencies
+- Use Repository pattern to abstract data sources
+- Use async/await for asynchronous operations
+- Localize all user-facing strings with `NSLocalizedString`
+- Handle errors with specific error types
+- Inject dependencies via initializers
+- Keep Views simple and declarative
+- Write tests for ViewModels and Repositories
+- Place business logic in Repositories
+- Access data through Repositories only
+
+### Don'ts ❌
+- Don't access Services directly from ViewModels
+- Don't put business logic in Views or Services
+- Don't use force unwrapping without explicit justification
+- Don't use `@ObservableObject` (use `@Observable` instead)
+- Don't hardcode strings (use Localizable.strings)
+- Don't create massive ViewModels (split into smaller ones)
+- Don't skip dependency injection
+- Don't access SwiftData directly from ViewModels
+- Don't mix layer concerns (each layer has its purpose)
+
+## Naming Conventions
+
+### ViewModel References
+**MUST:**
+- Use `vm` for all ViewModel variable names (properties, parameters, local variables)
+- This applies to stored properties, function parameters, and local variables
+
+**Example:**
+```swift
+struct ChatView: View {
+    @State private var vm: ChatViewModel
+    
+    init(vm: ChatViewModel = AppComponent.shared.container.resolve(ChatViewModel.self)!) {
+        self.vm = vm
+    }
+}
+```
+
+## Adding New Features Checklist
+
+When creating a new feature:
+1. Create feature directory structure under `Features/`
+2. Define Repository protocol if data access needed
+3. Implement Repository with injected Services
+4. Create ViewModel with `@Observable` and `@MainActor`
+5. Inject Repository into ViewModel via protocol
+6. Register dependencies in `AppComponent.swift`
+7. Create View that observes ViewModel
+8. Write tests with mock repositories
+9. Ensure all strings are localized
+
+## Testing Architecture
+
+**MUST:**
+- Test ViewModels with mock Repositories
+- Test Repositories with mock Services
+- Use Swift Testing framework (`@Test` attribute)
+- Follow Arrange-Act-Assert pattern
+- Test both success and failure cases
+
+**Example:**
+```swift
+@Test
+func testLoadMessages() async throws {
+    // Arrange
+    let mockRepository = MockChatRepository()
+    let vm = ChatViewModel(chatRepository: mockRepository)
+    
+    // Act
+    try await vm.loadMessages()
+    
+    // Assert
+    #expect(vm.messages.count == 2)
+    #expect(vm.isLoading == false)
+}
+```
+
+## References
+
+For detailed examples and complete documentation, see:
+- `ARCHITECTURE.md` - Full architecture documentation
+- `CODING_STANDARDS.md` - Code style and conventions

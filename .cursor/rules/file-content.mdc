@@ -1,0 +1,127 @@
+---
+description: when create a new file *.swift file or modify existing ones
+alwaysApply: false
+---
+# Swift File Content Rules
+
+## Overview
+All Swift files in this project must follow specific formatting requirements for copyright headers and file endings. These rules are enforced by SwiftLint and are critical for legal compliance and code quality.
+
+## Required File Structure
+
+### 1. Copyright Header (Required)
+**Position**: Must be the very first content in the file, before any imports or other code.
+
+**Template** (replace `YYYY` with current 4-digit year):
+```swift
+//
+// Copyright (c) YYYY Fundamental. All rights reserved.
+//
+// Ukraine, Kyiv, 03058
+//
+// This software is the confidential and proprietary information
+// of Fundamental company. created for Fundamental.
+// You shall not disclose such Confidential Information and shall use
+// it only in accordance with the terms of the license agreement
+// you entered into with Fundamental.
+//
+```
+
+**Requirements**:
+- Use exact text, punctuation, and spacing as shown
+- Replace `YYYY` with current year (e.g., `2024`)
+- No extra spaces or characters
+- Must be followed by a blank line before imports
+
+### 2. File Ending (Required)
+- **Must end with exactly one blank line** - no spaces, tabs, or other characters
+- This is enforced by SwiftLint and shows as a warning in GitHub PRs
+
+## Implementation Guidelines
+
+### For New Files
+1. Start with the copyright header (update year to current)
+2. Add blank line after header
+3. Add imports
+4. Write your code
+5. End with exactly one blank line
+
+### For Existing Files
+- **Year Updates**: Update copyright year when making significant changes
+- **Header Fixes**: Add missing headers or correct formatting
+- **Ending Fixes**: Ensure file ends with exactly one blank line
+
+### Common Scenarios
+
+#### Creating a New Swift File
+```swift
+//
+// Copyright (c) 2025 Fundamental. All rights reserved.
+//
+// Ukraine, Kyiv, 03058
+//
+// This software is the confidential and proprietary information
+// of Fundamental company. created for Fundamental.
+// You shall not disclose such Confidential Information and shall use
+// it only in accordance with the terms of the license agreement
+// you entered into with Fundamental.
+//
+//
+
+import Foundation
+import SwiftUI
+
+struct MyView: View {
+    var body: some View {
+        Text("Hello World")
+    }
+}
+
+```
+
+#### Adding Header to Existing File
+If a file is missing the header, add it at the very beginning:
+```swift
+//
+// Copyright (c) [Current Year] Fundamental. All rights reserved.
+//
+// Ukraine, Kyiv, 03058
+//
+// This software is the confidential and proprietary information
+// of Fundamental company. created for Fundamental.
+// You shall not disclose such Confidential Information and shall use
+// it only in accordance with the terms of the license agreement
+// you entered into with Fundamental.
+//
+
+// Existing imports and code below...
+```
+
+## Validation
+
+### SwiftLint Enforcement
+- Missing or incorrect headers are treated as **errors**
+- Missing blank line at end is treated as **error**
+- Run `swiftlint` locally before committing
+
+### GitHub PR Checks
+- File ending issues show as warnings in PRs
+- Copyright header issues block PRs
+
+## Best Practices
+
+1. **Year Management**: Update copyright year when making significant changes
+2. **Consistency**: Use exact header format across all files
+3. **Verification**: Always run SwiftLint before committing
+4. **Automation**: Consider using SwiftFormat for automatic formatting
+5. **Documentation**: Update this file when adding new exclusions
+
+## Quick Reference
+
+| Requirement | Position | Format |
+|-------------|----------|---------|
+| Copyright Header | First content in file | Exact template with current year |
+| Blank Line After Header | After header, before imports | Single blank line |
+| File Ending | End of file | Exactly one blank line |
+| Imports | After blank line | Standard Swift import statements |
+
