@@ -1,0 +1,21 @@
+# swift-format ignore patterns
+# Files and directories listed here will be excluded from swift-format
+
+# SwiftGen generated files
+LiveAssistant/Core/Generated/
+
+# Build directories
+.build/
+DerivedData/
+build/
+
+# Dependencies
+Pods/
+.bundle/
+vendor/
+SourcePackages/
+
+# Xcode project files
+*.xcodeproj/
+*.xcworkspace/
+

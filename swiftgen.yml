@@ -1,0 +1,50 @@
+# SwiftGen Configuration
+# This file configures SwiftGen to generate type-safe code for accessing resources
+
+# Strings Configuration
+strings:
+  inputs:
+    - LiveAssistant/Resources/Localizable.strings
+  outputs:
+    - templateName: structured-swift5
+      output: LiveAssistant/Core/Generated/Strings.swift
+      params:
+        enumName: Strings
+        publicAccess: true
+
+# Assets Configuration (Images, Colors, etc.)
+# Note: Excludes AppIcon as it's a special system asset
+xcassets:
+  inputs:
+    - LiveAssistant/Resources/Assets.xcassets
+  filter: ".*(?<!AppIcon)\\..*"
+  outputs:
+    - templateName: swift5
+      output: LiveAssistant/Core/Generated/Assets.swift
+      params:
+        enumName: Asset
+        publicAccess: true
+        allValues: true
+
+# Fonts Configuration (if needed in the future)
+# fonts:
+#   inputs:
+#     - LiveAssistant/Resources/Fonts
+#   outputs:
+#     - templateName: swift5
+#       output: LiveAssistant/Core/Generated/Fonts.swift
+#       params:
+#         enumName: FontFamily
+#         publicAccess: true
+
+# JSON Configuration (if needed for static data)
+# json:
+#   inputs:
+#     - LiveAssistant/Resources/Data
+#   outputs:
+#     - templateName: runtime-swift5
+#       output: LiveAssistant/Core/Generated/JSONFiles.swift
+#       params:
+#         enumName: JSONFiles
+#         publicAccess: true
+

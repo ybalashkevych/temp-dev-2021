@@ -14,6 +14,7 @@ excluded:
   - vendor
   - LiveAssistant.xcodeproj
   - SourcePackages
+  - LiveAssistant/Core/Generated  # SwiftGen generated files
 
 # Paths to include (optional, defaults to all Swift files)
 included:
