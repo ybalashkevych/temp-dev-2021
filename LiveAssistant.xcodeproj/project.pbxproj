@@ -1,0 +1,683 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5A07D2002E9BD76700C66231 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = 5A07D1FF2E9BD76700C66231 /* Swinject */; };
+		5A07D2032E9BD78100C66231 /* SwiftLintFramework in Frameworks */ = {isa = PBXBuildFile; productRef = 5A07D2022E9BD78100C66231 /* SwiftLintFramework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5A07D1BB2E9BC4DC00C66231 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5A07D1A32E9BC4DA00C66231 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5A07D1AA2E9BC4DA00C66231;
+			remoteInfo = LiveAssistant;
+		};
+		5A07D1C52E9BC4DC00C66231 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5A07D1A32E9BC4DA00C66231 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5A07D1AA2E9BC4DA00C66231;
+			remoteInfo = LiveAssistant;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		5A07D1AB2E9BC4DA00C66231 /* LiveAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiveAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A07D1BA2E9BC4DC00C66231 /* LiveAssistantTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiveAssistantTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A07D1C42E9BC4DC00C66231 /* LiveAssistantUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiveAssistantUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		5A07D1AD2E9BC4DA00C66231 /* LiveAssistant */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LiveAssistant;
+			sourceTree = "<group>";
+		};
+		5A07D1BD2E9BC4DC00C66231 /* LiveAssistantTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LiveAssistantTests;
+			sourceTree = "<group>";
+		};
+		5A07D1C72E9BC4DC00C66231 /* LiveAssistantUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LiveAssistantUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5A07D1A82E9BC4DA00C66231 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A07D2032E9BD78100C66231 /* SwiftLintFramework in Frameworks */,
+				5A07D2002E9BD76700C66231 /* Swinject in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A07D1B72E9BC4DC00C66231 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A07D1C12E9BC4DC00C66231 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5A07D1A22E9BC4DA00C66231 = {
+			isa = PBXGroup;
+			children = (
+				5A07D1AD2E9BC4DA00C66231 /* LiveAssistant */,
+				5A07D1BD2E9BC4DC00C66231 /* LiveAssistantTests */,
+				5A07D1C72E9BC4DC00C66231 /* LiveAssistantUITests */,
+				5A07D1AC2E9BC4DA00C66231 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5A07D1AC2E9BC4DA00C66231 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5A07D1AB2E9BC4DA00C66231 /* LiveAssistant.app */,
+				5A07D1BA2E9BC4DC00C66231 /* LiveAssistantTests.xctest */,
+				5A07D1C42E9BC4DC00C66231 /* LiveAssistantUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5A07D1AA2E9BC4DA00C66231 /* LiveAssistant */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A07D1CE2E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistant" */;
+			buildPhases = (
+				5A07D2382E9C132F00C66231 /* SwiftGen */,
+				5A07D2372E9C131E00C66231 /* Swift Format */,
+				5A07D1A72E9BC4DA00C66231 /* Sources */,
+				5A07D1A82E9BC4DA00C66231 /* Frameworks */,
+				5A07D1A92E9BC4DA00C66231 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5A07D3082E9C3A6100C66231 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5A07D1AD2E9BC4DA00C66231 /* LiveAssistant */,
+			);
+			name = LiveAssistant;
+			packageProductDependencies = (
+				5A07D1FF2E9BD76700C66231 /* Swinject */,
+				5A07D2022E9BD78100C66231 /* SwiftLintFramework */,
+			);
+			productName = LiveAssistant;
+			productReference = 5A07D1AB2E9BC4DA00C66231 /* LiveAssistant.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5A07D1B92E9BC4DC00C66231 /* LiveAssistantTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A07D1D12E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistantTests" */;
+			buildPhases = (
+				5A07D1B62E9BC4DC00C66231 /* Sources */,
+				5A07D1B72E9BC4DC00C66231 /* Frameworks */,
+				5A07D1B82E9BC4DC00C66231 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5A07D1BC2E9BC4DC00C66231 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5A07D1BD2E9BC4DC00C66231 /* LiveAssistantTests */,
+			);
+			name = LiveAssistantTests;
+			packageProductDependencies = (
+			);
+			productName = LiveAssistantTests;
+			productReference = 5A07D1BA2E9BC4DC00C66231 /* LiveAssistantTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5A07D1C32E9BC4DC00C66231 /* LiveAssistantUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A07D1D42E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistantUITests" */;
+			buildPhases = (
+				5A07D1C02E9BC4DC00C66231 /* Sources */,
+				5A07D1C12E9BC4DC00C66231 /* Frameworks */,
+				5A07D1C22E9BC4DC00C66231 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5A07D1C62E9BC4DC00C66231 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5A07D1C72E9BC4DC00C66231 /* LiveAssistantUITests */,
+			);
+			name = LiveAssistantUITests;
+			packageProductDependencies = (
+			);
+			productName = LiveAssistantUITests;
+			productReference = 5A07D1C42E9BC4DC00C66231 /* LiveAssistantUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5A07D1A32E9BC4DA00C66231 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					5A07D1AA2E9BC4DA00C66231 = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+					5A07D1B92E9BC4DC00C66231 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 5A07D1AA2E9BC4DA00C66231;
+					};
+					5A07D1C32E9BC4DC00C66231 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 5A07D1AA2E9BC4DA00C66231;
+					};
+				};
+			};
+			buildConfigurationList = 5A07D1A62E9BC4DA00C66231 /* Build configuration list for PBXProject "LiveAssistant" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5A07D1A22E9BC4DA00C66231;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5A07D1FE2E9BD76700C66231 /* XCRemoteSwiftPackageReference "Swinject" */,
+				5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5A07D1AC2E9BC4DA00C66231 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5A07D1AA2E9BC4DA00C66231 /* LiveAssistant */,
+				5A07D1B92E9BC4DC00C66231 /* LiveAssistantTests */,
+				5A07D1C32E9BC4DC00C66231 /* LiveAssistantUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5A07D1A92E9BC4DA00C66231 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A07D1B82E9BC4DC00C66231 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A07D1C22E9BC4DC00C66231 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+	5A07D2372E9C131E00C66231 /* Swift Format */ = {
+		isa = PBXShellScriptBuildPhase;
+		alwaysOutOfDate = 1;
+		buildActionMask = 12;
+		files = (
+		);
+		inputFileListPaths = (
+		);
+		inputPaths = (
+		);
+		name = "Swift Format";
+		outputFileListPaths = (
+		);
+		outputPaths = (
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+		shellPath = /bin/sh;
+		shellScript = "if [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n    # Exclude SwiftGen generated files from swift-format\n    find \"${SRCROOT}/LiveAssistant\" -name \"*.swift\" -not -path \"*/Generated/*\" -print0 | xargs -0 xcrun swift-format lint --strict 2>&1\n    echo \"✅ swift-format completed\"\nfi\n";
+	};
+		5A07D2382E9C132F00C66231 /* SwiftGen */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/LiveAssistant/Resources/Localizable.strings",
+				"$(SRCROOT)/LiveAssistant/Resources/Assets.xcassets",
+				"$(SRCROOT)/swiftgen.yml",
+			);
+			name = SwiftGen;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/LiveAssistant/Core/Generated/Strings.swift",
+				"$(SRCROOT)/LiveAssistant/Core/Generated/Assets.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# SwiftGen - Generate type-safe resource accessors\nif command -v swift &> /dev/null; then\n    cd \"${SRCROOT}\"\n    swift package --allow-writing-to-package-directory generate-code-for-resources\n    echo \"✅ SwiftGen: Generated type-safe resource accessors\"\nelse\n    echo \"⚠️  SwiftGen: Swift command not found, skipping code generation\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5A07D1A72E9BC4DA00C66231 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A07D1B62E9BC4DC00C66231 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A07D1C02E9BC4DC00C66231 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5A07D1BC2E9BC4DC00C66231 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5A07D1AA2E9BC4DA00C66231 /* LiveAssistant */;
+			targetProxy = 5A07D1BB2E9BC4DC00C66231 /* PBXContainerItemProxy */;
+		};
+		5A07D1C62E9BC4DC00C66231 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5A07D1AA2E9BC4DA00C66231 /* LiveAssistant */;
+			targetProxy = 5A07D1C52E9BC4DC00C66231 /* PBXContainerItemProxy */;
+		};
+		5A07D3082E9C3A6100C66231 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 5A07D3072E9C3A6100C66231 /* SwiftLintBuildToolPlugin */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		5A07D1CC2E9BC4DC00C66231 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		5A07D1CD2E9BC4DC00C66231 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		5A07D1CF2E9BC4DC00C66231 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistant;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		5A07D1D02E9BC4DC00C66231 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistant;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		5A07D1D22E9BC4DC00C66231 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistantTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiveAssistant.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LiveAssistant";
+			};
+			name = Debug;
+		};
+		5A07D1D32E9BC4DC00C66231 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistantTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiveAssistant.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LiveAssistant";
+			};
+			name = Release;
+		};
+		5A07D1D52E9BC4DC00C66231 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistantUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = LiveAssistant;
+			};
+			name = Debug;
+		};
+		5A07D1D62E9BC4DC00C66231 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistantUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = LiveAssistant;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5A07D1A62E9BC4DA00C66231 /* Build configuration list for PBXProject "LiveAssistant" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A07D1CC2E9BC4DC00C66231 /* Debug */,
+				5A07D1CD2E9BC4DC00C66231 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A07D1CE2E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistant" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A07D1CF2E9BC4DC00C66231 /* Debug */,
+				5A07D1D02E9BC4DC00C66231 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A07D1D12E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistantTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A07D1D22E9BC4DC00C66231 /* Debug */,
+				5A07D1D32E9BC4DC00C66231 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A07D1D42E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistantUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A07D1D52E9BC4DC00C66231 /* Debug */,
+				5A07D1D62E9BC4DC00C66231 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5A07D1FE2E9BD76700C66231 /* XCRemoteSwiftPackageReference "Swinject" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Swinject/Swinject";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.0;
+			};
+		};
+		5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/realm/SwiftLint.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.61.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5A07D1FF2E9BD76700C66231 /* Swinject */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A07D1FE2E9BD76700C66231 /* XCRemoteSwiftPackageReference "Swinject" */;
+			productName = Swinject;
+		};
+		5A07D2022E9BD78100C66231 /* SwiftLintFramework */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
+			productName = SwiftLintFramework;
+		};
+		5A07D3072E9C3A6100C66231 /* SwiftLintBuildToolPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
+			productName = "plugin:SwiftLintBuildToolPlugin";
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 5A07D1A32E9BC4DA00C66231 /* Project object */;
+}

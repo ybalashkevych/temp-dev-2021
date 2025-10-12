@@ -1,0 +1,46 @@
+/* 
+  Localizable.strings
+  LiveAssistant
+
+  Created by Yurii Balashkevych on 12/10/2025.
+  Copyright © 2025. All rights reserved.
+*/
+
+// MARK: - Chat Errors
+"chat.error.network_failure" = "Network connection failed. Please check your internet connection.";
+"chat.error.invalid_response" = "Received an invalid response from the server.";
+"chat.error.unauthorized" = "You are not authorized to perform this action.";
+
+// MARK: - Transcription Errors
+"transcription.error.microphone_permission" = "Microphone permission is required for transcription.";
+"transcription.error.initialization_failed" = "Failed to initialize transcription service.";
+"transcription.error.processing_failed" = "Failed to process audio input.";
+
+// MARK: - General Errors
+"error.generic" = "An unexpected error occurred. Please try again.";
+"error.unknown" = "An unknown error occurred.";
+
+// MARK: - Repository Errors
+"error.repository.fetch_failed" = "Failed to fetch data";
+"error.repository.save_failed" = "Failed to save data";
+"error.repository.delete_failed" = "Failed to delete data";
+"error.repository.not_found" = "Data not found";
+
+// MARK: - UI Labels
+"ui.loading" = "Loading...";
+"ui.retry" = "Retry";
+"ui.cancel" = "Cancel";
+"ui.done" = "Done";
+"ui.save" = "Save";
+
+// MARK: - Chat UI
+"chat.placeholder.message" = "Type a message...";
+"chat.send" = "Send";
+"chat.empty_state" = "No messages yet";
+
+// MARK: - Settings
+"settings.title" = "Settings";
+"settings.profile" = "Profile";
+"settings.about" = "About";
+
+
