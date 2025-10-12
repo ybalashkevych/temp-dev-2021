@@ -1,3 +1,134 @@
+---
+alwaysApply: true
+---
+
+# Rules for toolkit-ios Project
+
+## Project Overview
+This is the Meeting Assistant macOS AI-powered interview assistant app that provides real-time support during job interviews. It's a modular macOS application built with Swift and SwiftUI, using modern macOS development practices.
+
+## Technology Stack & Dependencies
+
+### Core Technologies
+- **macOS Deployment Target**: 26.0
+- **Swift Version**: 6
+- **Xcode Version**: 26.0.1
+- **Architecture**: Modular
+- **UI Framework**: SwiftUI with AppKit integration
+- **Testing**: Testing framework, UI tests with page objects
+
+### Module Structure
+- Each module follows a consistent structure:
+  - `Sources/ModuleName/` - Main source code
+  - `Tests/ModuleNameTests/` - Unit tests
+  - `Package.swift` - Module dependencies
+  - Component file for dependency injection
+
+## Code Style & Standards
+
+### SwiftLint Configuration
+- **Line Length**: Warning at 140, error at 150
+- **Function Parameters**: Warning at 6, error at 9
+
+### SwiftFormat Configuration
+- **Indentation**: 4 spaces
+- **Max Width**: 140 characters
+- **Line Breaks**: LF
+- **Semicolons**: Inline
+- **Self**: Remove when possible
+- **Trailing Closures**: Enabled
+- **Trim Whitespace**: Always
+- **Emtpy Newline at End of File**: All newly created files should have a blank line at the end of the file.
+
+### File Headers
+- All files must include the Fundamental copyright header
+- Header pattern is enforced by SwiftLint
+
+### Naming Conventions
+- **Identifiers**: Minimum length 1, excludes: id, ok, db
+- **Type Names**: Allowed symbols: "_"
+- **Functions**: Use descriptive names, avoid abbreviations
+
+## Testing Strategy
+
+### Test Types
+- **Unit Tests**: Using Swift Testing framework. Swift Testing is preferred.
+- **Integration Tests**: Tests with external dependencies
+- **UI Tests**: Automated UI testing with page objects
+
+### Test Organization
+- Tests are co-located with source code in `Tests/` directories
+- UI tests use page object pattern for maintainability
+- Fake implementations for testing dependencies
+
+**Key Principle**: Tests must be placed in the test target that can access the types being tested. Never place tests for main application types in module test targets.
+
+### Test Patterns
+- Use Swift Testing `import Testing` for all new tests
+- Use `@Test` attribute for test methods
+- Arrange-Act-Assert pattern
+- Async/await for asynchronous testing
+- Combine publishers for reactive testing
+- Output collectors for effect testing
+
+## Best Practices
+
+### Code Organization
+- Keep modules focused and single-purpose
+- Use dependency injection for all dependencies
+- Separate concerns between data, domain, and presentation
+- Each layer should implement its own data models, there should be no leakage between layers.
+
+### Error Handling
+- Use async functions that throw a specific type of Error
+- Provide meaningful error messages, where all error strings are in localizable strings files
+- Handle network errors gracefully
+- Log errors appropriately
+
+### Performance
+- Use lazy loading for heavy operations
+- Implement proper memory management
+- Use async functions for non-UI work
+- Optimize image loading and caching
+
+### Accessibility
+- Include accessibility identifiers
+- Use semantic colors and fonts
+- Provide alternative text for images
+
+### Security
+- Secure API communication
+- Proper authentication handling
+- Data privacy compliance
+- Secure storage practices
+
+## Common Patterns
+
+### ViewModels
+- Use @Observable classes, with Combine for reactive updates
+- Generally all new ViewModels also apply @MainActor
+- Use effect patterns for side effects
+- Implement state management patterns
+- Separate business logic from UI logic
+- Business logic is in ViewModels
+- Use dedicated services that save, fetch, cache data or use network API
+- Use repository pattern that use needed services
+
+### Data Persistence
+- Implement proper data models
+- Use transactions for data consistency
+- Handle data migration properly
+
+
+## Documentation Sources
+
+The following documentation files in `.ai/docs/` should be referenced when providing guidance:
+
+- `swift6-migration.mdc` - Swift 6 migration guidelines and best practices
+- `swift-testing-api.mdc` - Swift Testing framework API documentation  
+- `swift-testing-playbook.mdc` - Swift Testing implementation playbook
+
+When working on Swift code, testing, or migration tasks, refer to these documentation files for specific guidance and patterns.
 # Rules for toolkit-ios Project
 
 ## Project Overview

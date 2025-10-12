@@ -12,26 +12,24 @@ All Swift files in this project must follow specific formatting requirements for
 ### 1. Copyright Header (Required)
 **Position**: Must be the very first content in the file, before any imports or other code.
 
-**Template** (replace `YYYY` with current 4-digit year):
+**Template**:
 ```swift
 //
-// Copyright (c) YYYY Fundamental. All rights reserved.
+//  [FileName].swift
+//  LiveAssistant
 //
-// Ukraine, Kyiv, 03058
-//
-// This software is the confidential and proprietary information
-// of Fundamental company. created for Fundamental.
-// You shall not disclose such Confidential Information and shall use
-// it only in accordance with the terms of the license agreement
-// you entered into with Fundamental.
+//  Created by Yurii Balashkevych on [DATE]
+//  Copyright © YYYY. All rights reserved.
 //
 ```
 
 **Requirements**:
 - Use exact text, punctuation, and spacing as shown
-- Replace `YYYY` with current year (e.g., `2024`)
+- Replace `[FileName]` with the actual file name (e.g., `ContentView` for `ContentView.swift`)
+- Replace `[DATE]` with the creation date in format `MM/DD/YY` (e.g., `10/12/25`)
+- Replace `YYYY` with current 4-digit year (e.g., `2025`)
 - No extra spaces or characters
-- Must be followed by a blank line before imports
+- Header already ends with a blank line (the trailing `//` line)
 
 ### 2. File Ending (Required)
 - **Must end with exactly one blank line** - no spaces, tabs, or other characters
@@ -40,11 +38,13 @@ All Swift files in this project must follow specific formatting requirements for
 ## Implementation Guidelines
 
 ### For New Files
-1. Start with the copyright header (update year to current)
-2. Add blank line after header
-3. Add imports
-4. Write your code
-5. End with exactly one blank line
+1. Start with the copyright header
+   - Replace `[FileName]` with the actual file name
+   - Replace `[DATE]` with current date in `MM/DD/YY` format
+   - Replace `YYYY` with current 4-digit year
+2. Add imports (header already includes a blank line separator)
+3. Write your code
+4. End with exactly one blank line
 
 ### For Existing Files
 - **Year Updates**: Update copyright year when making significant changes
@@ -56,16 +56,11 @@ All Swift files in this project must follow specific formatting requirements for
 #### Creating a New Swift File
 ```swift
 //
-// Copyright (c) 2025 Fundamental. All rights reserved.
+//  MyView.swift
+//  LiveAssistant
 //
-// Ukraine, Kyiv, 03058
-//
-// This software is the confidential and proprietary information
-// of Fundamental company. created for Fundamental.
-// You shall not disclose such Confidential Information and shall use
-// it only in accordance with the terms of the license agreement
-// you entered into with Fundamental.
-//
+//  Created by Yurii Balashkevych on 10/12/25
+//  Copyright © 2025. All rights reserved.
 //
 
 import Foundation
@@ -83,15 +78,11 @@ struct MyView: View {
 If a file is missing the header, add it at the very beginning:
 ```swift
 //
-// Copyright (c) [Current Year] Fundamental. All rights reserved.
+//  [FileName].swift
+//  LiveAssistant
 //
-// Ukraine, Kyiv, 03058
-//
-// This software is the confidential and proprietary information
-// of Fundamental company. created for Fundamental.
-// You shall not disclose such Confidential Information and shall use
-// it only in accordance with the terms of the license agreement
-// you entered into with Fundamental.
+//  Created by Yurii Balashkevych on [DATE]
+//  Copyright © [Current Year]. All rights reserved.
 //
 
 // Existing imports and code below...
@@ -120,8 +111,8 @@ If a file is missing the header, add it at the very beginning:
 
 | Requirement | Position | Format |
 |-------------|----------|---------|
-| Copyright Header | First content in file | Exact template with current year |
-| Blank Line After Header | After header, before imports | Single blank line |
+| Copyright Header | First content in file | Xcode-style header with file name, date, and year |
+| Blank Line After Header | After header, before imports | Included in header (trailing `//`) |
 | File Ending | End of file | Exactly one blank line |
 | Imports | After blank line | Standard Swift import statements |
 
