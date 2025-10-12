@@ -1,0 +1,71 @@
+# SwiftFormat Configuration for LiveAssistant
+# Aligned with project standards
+
+# Format options
+--indent 4
+--indentcase false
+--trimwhitespace always
+--maxwidth 140
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+--linebreaks lf
+--semicolons inline
+--commas inline
+--decimalgrouping 3,6
+--binarygrouping 4,8
+--octalgrouping 4,8
+--hexgrouping 4,8
+--hexliteralcase uppercase
+--exponentcase lowercase
+--fractiongrouping disabled
+--ifdef indent
+--stripunusedargs closure-only
+--self remove
+--selfrequired
+--importgrouping testable-bottom
+--ifdef indent
+--patternlet hoist
+--empty void
+--emptybraces spaced
+
+# Rules
+--enable isEmpty
+--enable sortedImports
+--enable trailingClosures
+--enable redundantReturn
+--enable redundantParens
+--enable redundantVoidReturnType
+--enable redundantNilInit
+--enable redundantLet
+--enable redundantPattern
+--enable redundantGet
+--enable redundantFileprivate
+--enable redundantExtensionACL
+--enable consecutiveSpaces
+--enable duplicateImports
+--enable unusedArguments
+--enable hoistPatternLet
+--enable blankLinesAtEndOfScope
+--enable blankLinesAtStartOfScope
+--enable blankLinesBetweenScopes
+
+# Disable rules that conflict with project style
+--disable andOperator
+--disable wrapMultilineStatementBraces
+
+# File options
+--exclude DerivedData
+--exclude .build
+--exclude build
+--exclude Pods
+--exclude .bundle
+--exclude vendor
+--exclude LiveAssistant.xcodeproj
+--exclude SourcePackages
+
+# Swift version
+--swiftversion 6
+
+
