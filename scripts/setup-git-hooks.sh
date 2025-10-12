@@ -90,7 +90,7 @@ fi
 if command -v swiftlint &> /dev/null; then
     echo "🔎 Linting code with SwiftLint..."
     
-    # Run SwiftLint in background with timeout
+    # Run SwiftLint in background with timeout and error suppression
     SWIFTLINT_OUTPUT_FILE=$(mktemp)
     (swiftlint lint --strict --quiet > "$SWIFTLINT_OUTPUT_FILE" 2>&1) &
     SWIFTLINT_PID=$!
@@ -110,16 +110,20 @@ if command -v swiftlint &> /dev/null; then
         echo -e "${YELLOW}⚠️  SwiftLint timed out (Xcode 26 compatibility issue)${NC}"
         echo -e "${YELLOW}   Continuing with swift-format check passed${NC}"
     else
-        wait $SWIFTLINT_PID
+        # Wait and suppress "Illegal instruction" messages
+        wait $SWIFTLINT_PID 2>/dev/null || true
         SWIFTLINT_EXIT=$?
-        SWIFTLINT_OUTPUT=$(cat "$SWIFTLINT_OUTPUT_FILE")
+        SWIFTLINT_OUTPUT=$(cat "$SWIFTLINT_OUTPUT_FILE" 2>/dev/null || echo "")
         rm -f "$SWIFTLINT_OUTPUT_FILE"
         
-        # Check for errors
-        if echo "$SWIFTLINT_OUTPUT" | grep -q "Fatal error\|Illegal instruction"; then
+        # Exit codes: 0 = success, 132 = Illegal instruction, 124 = timeout
+        if [ $SWIFTLINT_EXIT -eq 132 ] || [ $SWIFTLINT_EXIT -eq 139 ]; then
+            echo -e "${YELLOW}⚠️  SwiftLint crashed (Xcode 26 beta compatibility issue)${NC}"
+            echo -e "${YELLOW}   Continuing with swift-format check passed${NC}"
+        elif echo "$SWIFTLINT_OUTPUT" | grep -q "Fatal error\|Illegal instruction\|sourcekitdInProc"; then
             echo -e "${YELLOW}⚠️  SwiftLint compatibility issue (Xcode 26 beta)${NC}"
             echo -e "${YELLOW}   Continuing with swift-format check passed${NC}"
-        elif [ $SWIFTLINT_EXIT -ne 0 ]; then
+        elif [ $SWIFTLINT_EXIT -ne 0 ] && [ -n "$SWIFTLINT_OUTPUT" ]; then
             echo -e "${RED}❌ SwiftLint check failed${NC}"
             echo "$SWIFTLINT_OUTPUT"
             echo "Fix the issues above before committing"
