@@ -14,7 +14,6 @@ import Swinject
 ///
 /// This class manages all dependencies using Swinject, ensuring proper
 /// lifecycle management and easy testing with mock implementations.
-@MainActor
 final class AppComponent {
     /// Shared instance of the dependency container
     static let shared = AppComponent()
@@ -47,11 +46,30 @@ final class AppComponent {
             }
         }.inObjectScope(.container)
 
-        // Add other services here as they are implemented:
-        // - API Service
-        // - Transcription Service
-        // - Storage Service
-        // etc.
+        // Permission Service
+        container.register(PermissionServiceProtocol.self) { _ in
+            PermissionService()
+        }.inObjectScope(.container)
+
+        // Microphone Audio Service
+        container.register(MicrophoneAudioServiceProtocol.self) { _ in
+            MicrophoneAudioService()
+        }.inObjectScope(.container)
+
+        // System Audio Service
+        container.register(SystemAudioServiceProtocol.self) { _ in
+            SystemAudioService()
+        }.inObjectScope(.container)
+
+        // Transcription Service
+        container.register(TranscriptionServiceProtocol.self) { _ in
+            TranscriptionService()
+        }.inObjectScope(.container)
+
+        // Text Analysis Service
+        container.register(TextAnalysisServiceProtocol.self) { _ in
+            TextAnalysisService()
+        }.inObjectScope(.container)
     }
 
     // MARK: - Repository Registration
@@ -66,7 +84,23 @@ final class AppComponent {
             return ItemRepository(modelContainer: modelContainer)
         }
 
-        // Add other repositories here as they are implemented
+        // Transcription Repository
+        container.register(TranscriptionRepositoryProtocol.self) { resolver in
+            guard
+                let microphoneService = resolver.resolve(MicrophoneAudioServiceProtocol.self),
+                let systemAudioService = resolver.resolve(SystemAudioServiceProtocol.self),
+                let transcriptionService = resolver.resolve(TranscriptionServiceProtocol.self),
+                let textAnalysisService = resolver.resolve(TextAnalysisServiceProtocol.self)
+            else {
+                fatalError("Required services not registered in DI container")
+            }
+            return TranscriptionRepository(
+                microphoneService: microphoneService,
+                systemAudioService: systemAudioService,
+                transcriptionService: transcriptionService,
+                textAnalysisService: textAnalysisService
+            )
+        }
     }
 
     // MARK: - ViewModel Registration
@@ -81,7 +115,19 @@ final class AppComponent {
             return ContentViewModel(itemRepository: itemRepository)
         }
 
-        // Add other ViewModels here as they are implemented
+        // Transcription ViewModel
+        container.register(TranscriptionViewModel.self) { resolver in
+            guard
+                let transcriptionRepository = resolver.resolve(TranscriptionRepositoryProtocol.self),
+                let permissionService = resolver.resolve(PermissionServiceProtocol.self)
+            else {
+                fatalError("Required dependencies not registered in DI container")
+            }
+            return TranscriptionViewModel(
+                transcriptionRepository: transcriptionRepository,
+                permissionService: permissionService
+            )
+        }
     }
 
     // MARK: - Resolver Methods

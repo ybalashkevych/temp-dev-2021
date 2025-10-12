@@ -6,20 +6,20 @@ import PackageDescription
 let package = Package(
     name: "LiveAssistant",
     platforms: [
-        .macOS(.v14)
+        .macOS(.v14),
     ],
     products: [
         .library(
             name: "LiveAssistant",
             targets: ["LiveAssistant"]
-        )
+        ),
     ],
     dependencies: [
         // Dependency Injection
         .package(url: "https://github.com/Swinject/Swinject.git", from: "2.8.0"),
-        
+
         // SwiftGen for type-safe resource access
-        .package(url: "https://github.com/SwiftGen/SwiftGenPlugin", from: "6.6.0")
+        .package(url: "https://github.com/SwiftGen/SwiftGenPlugin", from: "6.6.0"),
 
         // Recommended dependencies for AI/Communication features:
         // Add these as needed for your specific requirements
@@ -40,11 +40,11 @@ let package = Package(
         .target(
             name: "LiveAssistant",
             dependencies: [
-                .product(name: "Swinject", package: "Swinject")
+                .product(name: "Swinject", package: "Swinject"),
             ],
             path: "LiveAssistant",
             plugins: [
-                .plugin(name: "SwiftGenPlugin", package: "SwiftGenPlugin")
+                .plugin(name: "SwiftGenPlugin", package: "SwiftGenPlugin"),
             ]
         ),
         .testTarget(
@@ -56,7 +56,6 @@ let package = Package(
             name: "LiveAssistantUITests",
             dependencies: ["LiveAssistant"],
             path: "LiveAssistantUITests"
-        )
+        ),
     ]
 )
-

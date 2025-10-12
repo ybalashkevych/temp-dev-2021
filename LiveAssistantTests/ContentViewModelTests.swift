@@ -7,9 +7,9 @@
 //
 
 import Foundation
+@testable import LiveAssistant
 import SwiftData
 import Testing
-@testable import LiveAssistant
 
 /// Tests for ContentViewModel demonstrating Swift Testing framework usage.
 ///
@@ -158,4 +158,3 @@ final class MockItemRepository: ItemRepositoryProtocol {
         }
     }
 }
-

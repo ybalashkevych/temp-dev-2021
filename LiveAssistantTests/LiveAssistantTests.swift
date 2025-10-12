@@ -5,8 +5,8 @@
 //  Created by Yurii Balashkevych on 12/10/2025.
 //
 
-import Testing
 @testable import LiveAssistant
+import Testing
 
 struct LiveAssistantTests {
     @Test func example() async throws {

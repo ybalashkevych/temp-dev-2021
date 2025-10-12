@@ -20,7 +20,31 @@ struct LiveAssistantApp: App {
 
     var body: some Scene {
         WindowGroup {
+            MainView()
+                .frame(minWidth: 800, minHeight: 600)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+    }
+}
+
+/// Main view with tabbed interface for accessing app features.
+struct MainView: View {
+    @State private var selectedTab = 0
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            TranscriptionView()
+                .tabItem {
+                    Label(Strings.App.Tab.transcription, systemImage: "waveform")
+                }
+                .tag(0)
+
             ContentView()
+                .tabItem {
+                    Label(Strings.App.Tab.demoItems, systemImage: "list.bullet")
+                }
+                .tag(1)
         }
     }
 }
