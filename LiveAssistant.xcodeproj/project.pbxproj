@@ -248,25 +248,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-	5A07D2372E9C131E00C66231 /* Swift Format */ = {
-		isa = PBXShellScriptBuildPhase;
-		alwaysOutOfDate = 1;
-		buildActionMask = 12;
-		files = (
-		);
-		inputFileListPaths = (
-		);
-		inputPaths = (
-		);
-		name = "Swift Format";
-		outputFileListPaths = (
-		);
-		outputPaths = (
-		);
-		runOnlyForDeploymentPostprocessing = 0;
-		shellPath = /bin/sh;
-		shellScript = "if [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n    # Exclude SwiftGen generated files from swift-format\n    find \"${SRCROOT}/LiveAssistant\" -name \"*.swift\" -not -path \"*/Generated/*\" -print0 | xargs -0 xcrun swift-format lint --strict 2>&1\n    echo \"✅ swift-format completed\"\nfi\n";
-	};
+		5A07D2372E9C131E00C66231 /* Swift Format */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 12;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Swift Format";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n    # Exclude SwiftGen generated files from swift-format\n    find \"${SRCROOT}/LiveAssistant\" -name \"*.swift\" -not -path \"*/Generated/*\" -print0 | xargs -0 xcrun swift-format lint --strict 2>&1\n    echo \"✅ swift-format completed\"\nfi\n";
+		};
 		5A07D2382E9C132F00C66231 /* SwiftGen */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -458,51 +458,55 @@
 		5A07D1CF2E9BC4DC00C66231 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = J746DUJAJY;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistant;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+			CODE_SIGN_ENTITLEMENTS = LiveAssistant/LiveAssistant.entitlements;
+			CODE_SIGN_STYLE = Automatic;
+			COMBINE_HIDPI_IMAGES = YES;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = J746DUJAJY;
+			ENABLE_APP_SANDBOX = NO;
+			ENABLE_HARDENED_RUNTIME = YES;
+			ENABLE_PREVIEWS = YES;
+			ENABLE_USER_SCRIPT_SANDBOXING = NO;
+			ENABLE_USER_SELECTED_FILES = readonly;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = LiveAssistant/Info.plist;
+			INFOPLIST_KEY_NSHumanReadableCopyright = "";
+			LD_RUNPATH_SEARCH_PATHS = (
+				"$(inherited)",
+				"@executable_path/../Frameworks",
+			);
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistant;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			REGISTER_APP_GROUPS = YES;
+			STRING_CATALOG_GENERATE_SYMBOLS = YES;
+			SWIFT_APPROACHABLE_CONCURRENCY = YES;
+			SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+			SWIFT_VERSION = 5.0;
 		};
-		5A07D1D02E9BC4DC00C66231 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = J746DUJAJY;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
+		name = Debug;
+	};
+	5A07D1D02E9BC4DC00C66231 /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+		CODE_SIGN_ENTITLEMENTS = LiveAssistant/LiveAssistant.entitlements;
+		CODE_SIGN_STYLE = Automatic;
+			COMBINE_HIDPI_IMAGES = YES;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = J746DUJAJY;
+			ENABLE_APP_SANDBOX = NO;
+			ENABLE_HARDENED_RUNTIME = YES;
+			ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LiveAssistant/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

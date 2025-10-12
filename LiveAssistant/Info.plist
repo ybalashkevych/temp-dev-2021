@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>LiveAssistant needs access to your microphone to transcribe your voice during interviews.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>LiveAssistant uses speech recognition to convert your speech and system audio into text for real-time transcription.</string>
+    <key>NSSystemExtensionUsageDescription</key>
+    <string>LiveAssistant needs access to system audio to transcribe the interviewer's voice and questions.</string>
+</dict>
+</plist>
+

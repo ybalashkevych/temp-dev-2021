@@ -15,6 +15,50 @@
 "transcription.error.microphone_permission" = "Microphone permission is required for transcription.";
 "transcription.error.initialization_failed" = "Failed to initialize transcription service.";
 "transcription.error.processing_failed" = "Failed to process audio input.";
+"transcription.error.recognizer_unavailable" = "Speech recognizer is unavailable.";
+"transcription.error.recognition_failed" = "Recognition failed: %@";
+"transcription.error.audio_processing_failed" = "Failed to process audio.";
+"transcription.error.permission_denied" = "Speech recognition permission denied.";
+"transcription.error.engine_start_failed" = "Failed to start audio engine.";
+"transcription.error.input_node_unavailable" = "Microphone input is unavailable.";
+"transcription.error.format_conversion_failed" = "Failed to convert audio format.";
+"transcription.error.capture_session_failed" = "Failed to start capture session.";
+"transcription.error.toggle_microphone" = "Failed to toggle microphone: %@";
+"transcription.error.toggle_system_audio" = "Failed to toggle system audio: %@";
+"transcription.error.permissions_required" = "Please grant all required permissions to start transcription.";
+
+// MARK: - Transcription UI
+"transcription.status.recording" = "Recording";
+"transcription.status.stopped" = "Stopped";
+"transcription.control.start" = "Start";
+"transcription.control.stop" = "Stop";
+"transcription.control.clear" = "Clear";
+"transcription.control.microphone" = "Microphone";
+"transcription.control.system_audio" = "System Audio";
+"transcription.empty.title" = "No transcription yet";
+"transcription.empty.message" = "Start recording to see transcription";
+"transcription.segment.question" = "Question";
+"transcription.segment.partial" = "Partial";
+"transcription.segment.confidence" = "Confidence: %d%%";
+"transcription.speaker.microphone" = "Mic";
+"transcription.speaker.system" = "System";
+
+// MARK: - Permissions
+"permissions.title" = "Permissions Required";
+"permissions.description" = "LiveAssistant needs the following permissions to provide real-time transcription:";
+"permissions.microphone.title" = "Microphone Access";
+"permissions.microphone.description" = "To transcribe your voice";
+"permissions.speech_recognition.title" = "Speech Recognition";
+"permissions.speech_recognition.description" = "To convert speech to text";
+"permissions.screen_recording.title" = "Screen Recording";
+"permissions.screen_recording.description" = "To capture system audio";
+"permissions.grant_button" = "Grant Permissions";
+"permissions.checking" = "Checking...";
+"permissions.all_granted" = "All permissions granted!";
+"permissions.status.authorized" = "Authorized";
+"permissions.status.denied" = "Denied";
+"permissions.status.not_determined" = "Not Determined";
+"permissions.status.restricted" = "Restricted";
 
 // MARK: - General Errors
 "error.generic" = "An unexpected error occurred. Please try again.";
@@ -32,6 +76,11 @@
 "ui.cancel" = "Cancel";
 "ui.done" = "Done";
 "ui.save" = "Save";
+"ui.dismiss" = "Dismiss";
+
+// MARK: - App Navigation
+"app.tab.transcription" = "Transcription";
+"app.tab.demo_items" = "Demo Items";
 
 // MARK: - Chat UI
 "chat.placeholder.message" = "Type a message...";

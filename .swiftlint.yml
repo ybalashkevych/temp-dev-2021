@@ -64,6 +64,7 @@ opt_in_rules:
 disabled_rules:
   - todo
   - trailing_whitespace
+  - trailing_comma
 
 # Rule configurations
 line_length:

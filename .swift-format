@@ -39,7 +39,7 @@
     "OnlyOneTrailingClosureArgument": true,
     "OrderedImports": true,
     "ReturnVoidInsteadOfEmptyTuple": true,
-    "UseLetInEveryBoundCaseVariable": true,
+    "UseLetInEveryBoundCaseVariable": false,
     "UseShorthandTypeNames": true,
     "UseSingleLinePropertyGetter": true,
     "UseSynthesizedInitializer": true,
