@@ -265,7 +265,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n    # Exclude SwiftGen generated files from swift-format\n    find \"${SRCROOT}/LiveAssistant\" -name \"*.swift\" -not -path \"*/Generated/*\" -print0 | xargs -0 xcrun swift-format lint --strict 2>&1\n    echo \"✅ swift-format completed\"\nfi\n";
+			shellScript = "if [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n    # Auto-fix formatting issues (exclude SwiftGen generated files)\n    find \"${SRCROOT}/LiveAssistant\" -name \"*.swift\" -not -path \"*/Generated/*\" -print0 | xargs -0 xcrun swift-format format --in-place 2>&1\n    echo \"✅ swift-format auto-fixed all files\"\nfi\n";
 		};
 		5A07D2382E9C132F00C66231 /* SwiftGen */ = {
 			isa = PBXShellScriptBuildPhase;

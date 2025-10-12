@@ -143,15 +143,21 @@ final class TranscriptionViewModel {
     func toggleSystemAudio() async {
         do {
             if isSystemAudioEnabled {
+                print("🔴 Stopping system audio capture")
                 await transcriptionRepository.stopSystemAudio()
                 isSystemAudioEnabled = false
+                print("✅ System audio capture stopped")
             } else {
+                print("🟢 Starting system audio capture")
                 try await transcriptionRepository.startSystemAudio()
                 isSystemAudioEnabled = true
                 error = nil
+                print("✅ System audio capture started successfully")
             }
         } catch {
-            self.error = "Failed to toggle system audio: \(error.localizedDescription)"
+            let errorMsg = "Failed to toggle system audio: \(error.localizedDescription)"
+            print("❌ \(errorMsg)")
+            self.error = errorMsg
         }
     }
 

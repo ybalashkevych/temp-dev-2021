@@ -112,7 +112,7 @@ final class TranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked
             self.segmentContinuations[id] = continuation
 
             continuation.onTermination = { @Sendable [weak self] _ in
-                Task { @MainActor in
+                Task { @MainActor [weak self] in
                     self?.segmentContinuations.removeValue(forKey: id)
                 }
             }
