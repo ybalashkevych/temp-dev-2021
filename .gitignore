@@ -1,0 +1,123 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Xcode
+build/
+.build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+timeline.xctimeline
+playground.xcworkspace
+*~
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.pins
+Package.resolved
+SourcePackages/
+xcuserdata/
+derivedDataDirectory/
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+.netrc
+
+# CocoaPods
+Pods/
+*.xcworkspace
+!default.xcworkspace
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+fastlane/.env*
+
+# Code coverage
+*.gcno
+*.gcda
+*.gcov
+*.profraw
+*.profdata
+coverage.txt
+coverage_reports/
+
+# Testing
+test_reports/
+reports/
+archives/
+swiftlint.xml
+
+# Dependencies
+.bundle/
+vendor/
+
+# IDEs
+.vscode/
+.idea/
+buildServer.json
+*.swp
+*.swo
+*~.nib
+
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.p12
+*.mobileprovision
+*.certSigningRequest
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+Crashlytics.framework/
+
+# App specific
+# Add any app-specific files or directories to ignore
