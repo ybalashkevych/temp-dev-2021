@@ -34,10 +34,13 @@ final class TranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked
     }
 
     func startMicrophone() async throws {
+        print("🎙️ [Repository] startMicrophone() called")
+
         // Ensure we have a session
         if currentSession == nil {
             currentSession = TranscriptionSession()
             sessionStartTime = Date()
+            print("📝 [Repository] Created new transcription session")
         }
 
         // Initialize quality tracking
@@ -46,23 +49,35 @@ final class TranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked
         }
 
         // Start microphone capture
+        print("🎙️ [Repository] Starting microphone capture...")
         let audioStream = try await microphoneService.startCapture()
+        print("✅ [Repository] Microphone capture started")
 
         // Start transcription for microphone
+        print("🎙️ [Repository] Starting transcription service for microphone...")
         let transcriptionStream = await transcriptionService.startTranscription(
             source: .microphone,
             audioStream: audioStream
         )
+        print("✅ [Repository] Transcription service started for microphone")
 
         // Process transcription results
         let task = Task {
+            print("🎙️ [Repository] Waiting for transcription results from microphone...")
+            var resultCount = 0
             for await result in transcriptionStream {
+                resultCount += 1
+                if resultCount == 1 {
+                    print("🎙️ [Repository] Received first transcription result from microphone!")
+                }
                 await processTranscriptionResult(result, speaker: .microphone)
             }
+            print("🎙️ [Repository] Microphone transcription stream ended, total results: \(resultCount)")
         }
 
         activeTasks.append(task)
         currentSession?.activeSources.insert(.microphone)
+        print("✅ [Repository] Microphone is now active")
     }
 
     func startSystemAudio() async throws {

@@ -32,6 +32,11 @@ final class TranscriptionViewModel {
 
     private var segmentStreamTask: Task<Void, Never>?
 
+    /// Paragraphs grouped from segments with configurable gap threshold.
+    var paragraphs: [TranscriptionParagraph] {
+        groupSegmentsIntoParagraphs(segments, gapThreshold: 2.0)
+    }
+
     // MARK: - Initialization
 
     init(
@@ -195,7 +200,7 @@ final class TranscriptionViewModel {
     private func startBothSources() async {
         var errors: [String] = []
 
-        // Start microphone
+        // Start microphone (on-device recognition)
         do {
             print("🎤 Starting microphone capture...")
             try await transcriptionRepository.startMicrophone()
@@ -207,7 +212,7 @@ final class TranscriptionViewModel {
             print("❌ Failed to start microphone: \(error.localizedDescription)")
         }
 
-        // Start system audio
+        // Start system audio (cloud recognition)
         do {
             print("🔊 Starting system audio capture...")
             try await transcriptionRepository.startSystemAudio()
@@ -231,30 +236,32 @@ final class TranscriptionViewModel {
     private func handleNewSegment(_ segment: TranscriptionSegment) async {
         let finalStatus = segment.isFinal ? "FINAL" : "partial"
         print("📥 [ViewModel] Received [\(finalStatus)] segment from [\(segment.speaker)]: \"\(segment.text)\"")
+        print("   ⏱️  Start: \(segment.startTime), End: \(segment.endTime), Duration: \(segment.duration)")
         print("📊 [ViewModel] Current segments count before: \(segments.count)")
 
         if segment.isFinal {
             // Replace any partial segment with the same approximate timing with the final one
-            if let index = segments.firstIndex(where: {
+            if let index = segments.lastIndex(where: {
                 !$0.isFinal
                     && $0.speaker == segment.speaker
-                    && abs($0.startTime - segment.startTime) < 1.0
+                    && abs($0.startTime - segment.startTime) < 0.5
             }) {
-                print("🔄 [ViewModel] Replacing partial segment at index \(index)")
+                print("🔄 [ViewModel] Replacing partial segment at index \(index) with final")
                 segments[index] = segment
             } else {
                 print("➕ [ViewModel] Appending new FINAL segment")
                 segments.append(segment)
             }
         } else {
-            // Add or update partial segment
-            if let index = segments.firstIndex(where: {
-                !$0.isFinal
-                    && $0.speaker == segment.speaker
-                    && abs($0.startTime - segment.startTime) < 1.0
-            }) {
-                print("🔄 [ViewModel] Updating partial segment at index \(index)")
-                segments[index] = segment
+            // For partial segments, only update if it's very recent (last segment from same speaker)
+            let shouldUpdate =
+                segments.last?.speaker == segment.speaker
+                && segments.last?.isFinal == false
+                && abs((segments.last?.startTime ?? 0) - segment.startTime) < 0.5
+
+            if shouldUpdate {
+                print("🔄 [ViewModel] Updating most recent partial segment")
+                segments[segments.count - 1] = segment
             } else {
                 print("➕ [ViewModel] Appending new partial segment")
                 segments.append(segment)
@@ -262,5 +269,91 @@ final class TranscriptionViewModel {
         }
 
         print("📊 [ViewModel] Current segments count after: \(segments.count)")
+        let micCount = segments.filter { $0.speaker == .microphone }.count
+        let systemCount = segments.filter { $0.speaker == .systemAudio }.count
+        print("🗂️  Segments by speaker: Mic=\(micCount), System=\(systemCount)")
+    }
+
+    /// Groups segments into paragraphs based on speaker, time gaps, and natural breaks.
+    /// - Parameters:
+    ///   - segments: The segments to group.
+    ///   - gapThreshold: The maximum time gap (in seconds) between segments to keep them in the same paragraph.
+    /// - Returns: An array of paragraphs.
+    private func groupSegmentsIntoParagraphs(
+        _ segments: [TranscriptionSegment],
+        gapThreshold: TimeInterval
+    ) -> [TranscriptionParagraph] {
+        guard !segments.isEmpty else { return [] }
+
+        let maxSegmentsPerParagraph = 6
+        let maxParagraphDuration: TimeInterval = 20.0
+
+        var paragraphs: [TranscriptionParagraph] = []
+        var currentParagraphSegments: [TranscriptionSegment] = []
+        var currentSpeaker: SpeakerType?
+        var lastEndTime: TimeInterval = 0
+        var paragraphStartTime: TimeInterval = 0
+
+        for segment in segments {
+            let timeSinceLastSegment = segment.startTime - lastEndTime
+            let paragraphDuration = segment.endTime - paragraphStartTime
+            let hasNaturalBreak = shouldBreakAtSegment(segment, previousSegments: currentParagraphSegments)
+
+            let shouldStartNewParagraph =
+                currentSpeaker != segment.speaker
+                || (currentSpeaker != nil && timeSinceLastSegment > gapThreshold)
+                || currentParagraphSegments.count >= maxSegmentsPerParagraph
+                || paragraphDuration >= maxParagraphDuration
+                || (hasNaturalBreak && currentParagraphSegments.count >= 3)
+
+            if shouldStartNewParagraph && !currentParagraphSegments.isEmpty {
+                // Create paragraph from accumulated segments
+                if let speaker = currentSpeaker {
+                    let paragraph = TranscriptionParagraph(segments: currentParagraphSegments, speaker: speaker)
+                    paragraphs.append(paragraph)
+                }
+                currentParagraphSegments = []
+                paragraphStartTime = segment.startTime
+            } else if currentParagraphSegments.isEmpty {
+                paragraphStartTime = segment.startTime
+            }
+
+            currentParagraphSegments.append(segment)
+            currentSpeaker = segment.speaker
+            lastEndTime = segment.endTime
+        }
+
+        // Add remaining segments as final paragraph
+        if !currentParagraphSegments.isEmpty, let speaker = currentSpeaker {
+            let paragraph = TranscriptionParagraph(segments: currentParagraphSegments, speaker: speaker)
+            paragraphs.append(paragraph)
+        }
+
+        return paragraphs
+    }
+
+    /// Determines if a segment represents a natural break point for paragraphs.
+    /// - Parameters:
+    ///   - segment: The current segment to evaluate.
+    ///   - previousSegments: The segments already in the current paragraph.
+    /// - Returns: Whether this segment should trigger a new paragraph.
+    private func shouldBreakAtSegment(_ segment: TranscriptionSegment, previousSegments: [TranscriptionSegment]) -> Bool {
+        guard !previousSegments.isEmpty else { return false }
+
+        // Check if previous segment ended with sentence-ending punctuation
+        if let lastSegment = previousSegments.last {
+            let trimmedText = lastSegment.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let endsWithSentencePunctuation =
+                trimmedText.hasSuffix(".")
+                || trimmedText.hasSuffix("?")
+                || trimmedText.hasSuffix("!")
+
+            // If previous segment was final and ended with punctuation, consider breaking
+            if lastSegment.isFinal && endsWithSentencePunctuation {
+                return true
+            }
+        }
+
+        return false
     }
 }

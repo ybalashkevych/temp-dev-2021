@@ -88,6 +88,213 @@ If a file is missing the header, add it at the very beginning:
 // Existing imports and code below...
 ```
 
+## Code Organization with Extensions
+
+### Overview
+To improve code readability and maintain clear separation of concerns, use Swift extensions to organize code within types. This approach makes large files more navigable and logically groups related functionality.
+
+### Extension Usage Rules
+
+**MUST use extensions for:**
+1. **Protocol Conformances** - Each protocol should have its own extension
+2. **Private Methods** - Group private methods by logical functionality
+3. **Logically Separated Functionality** - When public/internal methods can be grouped by purpose
+
+**CAN remain in main type body:**
+- Properties (public, internal, private)
+- Initializers
+- Public and internal methods that are core to the type's primary purpose
+
+### Organization Pattern
+
+#### Basic Structure
+```swift
+// Main type definition
+final class MyViewModel {
+    // MARK: - Properties
+    private let repository: MyRepositoryProtocol
+    private(set) var state: ViewState = .idle
+    
+    // MARK: - Initialization
+    init(repository: MyRepositoryProtocol) {
+        self.repository = repository
+    }
+    
+    // MARK: - Public Methods
+    func loadData() async {
+        // Core public functionality
+    }
+}
+
+// MARK: - Protocol Conformance
+extension MyViewModel: SomeProtocol {
+    func protocolMethod() {
+        // Protocol implementation
+    }
+}
+
+// MARK: - Private Methods - Data Processing
+private extension MyViewModel {
+    func processData(_ data: [Item]) -> [ProcessedItem] {
+        // Data processing logic
+    }
+    
+    func validateData(_ data: [Item]) -> Bool {
+        // Validation logic
+    }
+}
+
+// MARK: - Private Methods - UI State Management
+private extension MyViewModel {
+    func updateUIState(_ state: ViewState) {
+        // UI state updates
+    }
+    
+    func handleError(_ error: Error) {
+        // Error handling
+    }
+}
+```
+
+#### Multiple Protocol Conformances
+```swift
+struct ContentView: View {
+    @State private var vm: ContentViewModel
+    
+    var body: some View {
+        // View implementation
+    }
+}
+
+// MARK: - Equatable
+extension ContentView: Equatable {
+    static func == (lhs: ContentView, rhs: ContentView) -> Bool {
+        // Equatable implementation
+    }
+}
+
+// MARK: - Identifiable
+extension ContentView: Identifiable {
+    var id: String {
+        // Identifiable implementation
+    }
+}
+```
+
+#### Service/Repository Organization
+```swift
+final class TranscriptionService: TranscriptionServiceProtocol {
+    // MARK: - Properties
+    private let recognizer: SFSpeechRecognizer
+    private let audioEngine: AVAudioEngine
+    
+    // MARK: - Initialization
+    init() {
+        // Initialization
+    }
+    
+    // MARK: - Public API
+    func startTranscription() async throws {
+        // Public method
+    }
+    
+    func stopTranscription() {
+        // Public method
+    }
+}
+
+// MARK: - Private Methods - Audio Setup
+private extension TranscriptionService {
+    func configureAudioEngine() {
+        // Audio configuration
+    }
+    
+    func setupInputNode() {
+        // Input setup
+    }
+}
+
+// MARK: - Private Methods - Recognition
+private extension TranscriptionService {
+    func createRecognitionRequest() -> SFSpeechAudioBufferRecognitionRequest {
+        // Request creation
+    }
+    
+    func handleRecognitionResult(_ result: SFSpeechRecognitionResult) {
+        // Result handling
+    }
+}
+```
+
+### Guidelines for Logical Grouping
+
+When organizing private methods into extensions, group by:
+
+1. **Functionality Domain**
+   - Data processing
+   - Network operations
+   - State management
+   - UI updates
+   - Validation
+
+2. **Data Flow Stage**
+   - Input handling
+   - Data transformation
+   - Output formatting
+   - Error handling
+
+3. **System Integration**
+   - Audio operations
+   - Permission handling
+   - File operations
+   - API communication
+
+### MARK Comments
+
+**MUST:**
+- Use `// MARK: - ` prefix for all extension headers
+- Use descriptive, specific names for private method groups
+- Be consistent with MARK comment style across the file
+
+**Examples:**
+```swift
+// MARK: - Protocol Conformance
+// MARK: - Equatable
+// MARK: - Private Methods - Audio Processing
+// MARK: - Private Methods - State Management
+// MARK: - Private Methods - Error Handling
+```
+
+### Benefits
+
+1. **Improved Readability**
+   - Clear visual separation between different concerns
+   - Easier to scan and navigate large files
+   - MARK comments create navigable sections in Xcode
+
+2. **Better Organization**
+   - Related functionality grouped together
+   - Protocol conformances isolated and easy to find
+   - Private implementation details separated from public API
+
+3. **Enhanced Maintainability**
+   - Changes to private logic don't clutter main type definition
+   - Easy to add new protocol conformances
+   - Logical grouping helps identify refactoring opportunities
+
+4. **Code Review Benefits**
+   - Reviewers can quickly understand code structure
+   - Protocol conformances are immediately visible
+   - Changes are easier to contextualize
+
+### Consistency Across Layers
+
+This organization pattern applies to all layers:
+- **Views**: Separate view body from helper methods and protocol conformances
+- **ViewModels**: Separate public API from private implementation
+- **Repositories**: Group data source interactions and transformations
+- **Services**: Organize system integrations and internal logic
+
 ## Validation
 
 ### SwiftLint Enforcement

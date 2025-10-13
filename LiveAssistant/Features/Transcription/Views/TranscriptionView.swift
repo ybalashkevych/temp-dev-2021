@@ -78,7 +78,7 @@ struct TranscriptionView: View {
                 }
                 .padding()
             } else {
-                // Transcription segments list
+                // Transcription paragraphs list
                 if vm.segments.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "waveform")
@@ -95,18 +95,21 @@ struct TranscriptionView: View {
                 } else {
                     ScrollViewReader { proxy in
                         ScrollView {
-                            LazyVStack(alignment: .leading, spacing: 12) {
-                                ForEach(vm.segments) { segment in
-                                    TranscriptionSegmentRow(segment: segment)
-                                        .id(segment.id)
+                            LazyVStack(alignment: .leading, spacing: 16) {
+                                ForEach(Array(vm.paragraphs.enumerated()), id: \.element.id) { index, paragraph in
+                                    TranscriptionParagraphView(
+                                        paragraph: paragraph,
+                                        isCurrent: index == vm.paragraphs.count - 1
+                                    )
+                                    .id(paragraph.id)
                                 }
                             }
                             .padding()
                         }
-                        .onChange(of: vm.segments.count) { _, _ in
-                            if let lastSegment = vm.segments.last {
+                        .onChange(of: vm.paragraphs.count) { _, _ in
+                            if let lastParagraph = vm.paragraphs.last {
                                 withAnimation {
-                                    proxy.scrollTo(lastSegment.id, anchor: .bottom)
+                                    proxy.scrollTo(lastParagraph.id, anchor: .bottom)
                                 }
                             }
                         }

@@ -15,6 +15,8 @@ final class SystemAudioService: SystemAudioServiceProtocol, @unchecked Sendable 
     private nonisolated(unsafe) var stream: SCStream?
     private nonisolated(unsafe) var audioStream: AsyncStream<AudioBuffer>.Continuation?
     private nonisolated(unsafe) var streamOutput: SystemAudioStreamOutput?
+    private nonisolated(unsafe) var videoOutput: SystemVideoStreamOutput?
+    private nonisolated(unsafe) var streamDelegate: SystemAudioStreamDelegate?
     private var _isCapturing = false
 
     var isCapturing: Bool {
@@ -47,21 +49,11 @@ final class SystemAudioService: SystemAudioServiceProtocol, @unchecked Sendable 
         configuration.excludesCurrentProcessAudio = true  // Prevent feedback
         configuration.sampleRate = 16000  // 16kHz for speech recognition
         configuration.channelCount = 1  // Mono
-        configuration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
 
-        // Explicitly disable video capture (audio only)
-        configuration.width = 1
-        configuration.height = 1
-        configuration.pixelFormat = kCVPixelFormatType_32BGRA
-        configuration.showsCursor = false
-
-        print("🎵 Configured for audio-only capture (video disabled)")
+        // Don't configure video properties - we only want audio
+        print("🎵 Configured for audio-only capture")
 
         print("🎵 System audio configuration: sampleRate=\(configuration.sampleRate), channels=\(configuration.channelCount)")
-
-        // Create the stream
-        let captureStream = SCStream(filter: filter, configuration: configuration, delegate: nil)
-        stream = captureStream
 
         // Create async stream for audio buffers
         let audioBufferStream = AsyncStream<AudioBuffer> { continuation in
@@ -74,15 +66,33 @@ final class SystemAudioService: SystemAudioServiceProtocol, @unchecked Sendable 
             }
         }
 
+        // Create and retain delegate
+        let delegate = SystemAudioStreamDelegate()
+        streamDelegate = delegate
+
+        // Create the stream with delegate
+        let captureStream = SCStream(filter: filter, configuration: configuration, delegate: delegate)
+        stream = captureStream
+
         // Add audio output handler - must retain the output handler!
-        let outputHandler = SystemAudioStreamOutput(continuation: audioStream)
-        streamOutput = outputHandler
+        let audioOutputHandler = SystemAudioStreamOutput(continuation: audioStream)
+        streamOutput = audioOutputHandler
         try captureStream.addStreamOutput(
-            outputHandler,
+            audioOutputHandler,
             type: .audio,
-            sampleHandlerQueue: DispatchQueue(label: "com.liveassistant.systemaudio")
+            sampleHandlerQueue: DispatchQueue(label: "com.liveassistant.systemaudio.audio")
         )
-        print("✅ Stream output handler added and retained")
+        print("✅ Audio output handler added and retained")
+
+        // Add video output handler to consume and discard video frames
+        let videoOutputHandler = SystemVideoStreamOutput()
+        videoOutput = videoOutputHandler
+        try captureStream.addStreamOutput(
+            videoOutputHandler,
+            type: .screen,
+            sampleHandlerQueue: DispatchQueue(label: "com.liveassistant.systemaudio.video")
+        )
+        print("✅ Video output handler added (will discard frames)")
 
         // Start the stream
         try await captureStream.startCapture()
@@ -106,6 +116,8 @@ final class SystemAudioService: SystemAudioServiceProtocol, @unchecked Sendable 
         audioStream?.finish()
         audioStream = nil
         streamOutput = nil
+        videoOutput = nil
+        streamDelegate = nil
         stream = nil
         _isCapturing = false
     }
@@ -123,23 +135,17 @@ private final class SystemAudioStreamOutput: NSObject, SCStreamOutput {
 
     func stream(_: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .audio else {
-            print("⚠️ Non-audio buffer received: \(type)")
             return
         }
-
-        print("🎵 Audio sample buffer received")
 
         guard let pcmBuffer = convertToAudioBuffer(sampleBuffer) else {
             return
         }
 
-        verifyAndLogAudioLevel(pcmBuffer)
-
         let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds
         let audioBuffer = AudioBuffer(buffer: pcmBuffer, timestamp: timestamp)
 
         continuation?.yield(audioBuffer)
-        print("✅ Audio buffer yielded to stream")
     }
 
     private func convertToAudioBuffer(_ sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
@@ -147,11 +153,8 @@ private final class SystemAudioStreamOutput: NSObject, SCStreamOutput {
             let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer),
             let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)?.pointee
         else {
-            print("❌ Failed to get format description")
             return nil
         }
-
-        print("🎵 Audio format: sampleRate=\(asbd.mSampleRate), channels=\(asbd.mChannelsPerFrame), bitsPerChannel=\(asbd.mBitsPerChannel)")
 
         guard
             let format = AVAudioFormat(
@@ -161,12 +164,10 @@ private final class SystemAudioStreamOutput: NSObject, SCStreamOutput {
                 interleaved: false
             )
         else {
-            print("❌ Failed to create AVAudioFormat")
             return nil
         }
 
         guard let blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else {
-            print("❌ Failed to get block buffer from sample buffer")
             return nil
         }
 
@@ -175,15 +176,11 @@ private final class SystemAudioStreamOutput: NSObject, SCStreamOutput {
         CMBlockBufferGetDataPointer(blockBuffer, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length, dataPointerOut: &dataPointer)
 
         guard let dataPointer = dataPointer else {
-            print("❌ Failed to get data pointer from block buffer")
             return nil
         }
 
-        print("🎵 Block buffer length: \(length) bytes")
-
         let frameCount = AVAudioFrameCount(length) / format.streamDescription.pointee.mBytesPerFrame
         guard let pcmBuffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
-            print("❌ Failed to create PCM buffer with frameCapacity: \(frameCount)")
             return nil
         }
 
@@ -192,22 +189,23 @@ private final class SystemAudioStreamOutput: NSObject, SCStreamOutput {
 
         return pcmBuffer
     }
+}
 
-    private func verifyAndLogAudioLevel(_ pcmBuffer: AVAudioPCMBuffer) {
-        guard pcmBuffer.frameLength > 0,
-            let channelData = pcmBuffer.floatChannelData
-        else {
-            print("⚠️ Empty or invalid audio buffer")
-            return
+// MARK: - Video Output Handler (Discards frames)
+
+private final class SystemVideoStreamOutput: NSObject, SCStreamOutput {
+    func stream(_: SCStream, didOutputSampleBuffer _: CMSampleBuffer, of type: SCStreamOutputType) {
+        // Silently discard video frames - we only want audio
+        if type == .screen {
+            // Video frame received and discarded
         }
+    }
+}
 
-        let firstSamples = UnsafeBufferPointer(start: channelData[0], count: min(Int(pcmBuffer.frameLength), 100))
-        let avgAmplitude = firstSamples.reduce(0.0) { $0 + abs($1) } / Float(firstSamples.count)
+// MARK: - Stream Delegate
 
-        if avgAmplitude > 0.001 {
-            print("🔊 Audio detected: amplitude=\(avgAmplitude), frames=\(pcmBuffer.frameLength)")
-        } else {
-            print("🔇 Silent audio: amplitude=\(avgAmplitude), frames=\(pcmBuffer.frameLength)")
-        }
+private final class SystemAudioStreamDelegate: NSObject, SCStreamDelegate {
+    func stream(_ stream: SCStream, didStopWithError error: Error) {
+        print("⚠️ SCStream stopped with error: \(error.localizedDescription)")
     }
 }

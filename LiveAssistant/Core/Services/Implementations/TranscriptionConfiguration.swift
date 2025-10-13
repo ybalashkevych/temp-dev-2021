@@ -22,6 +22,10 @@ struct TranscriptionConfiguration: Sendable {
     /// Recognition mode (cloud vs on-device).
     let recognitionMode: RecognitionMode
 
+    /// Per-source recognition mode overrides.
+    /// Allows different recognition strategies for microphone vs system audio.
+    let sourceSpecificModes: [SpeakerType: RecognitionMode]?
+
     /// Task hint for the speech recognizer.
     let taskHint: SFSpeechRecognitionTaskHint
 
@@ -47,8 +51,14 @@ struct TranscriptionConfiguration: Sendable {
     let customVocabulary: [String]
 
     /// Default configuration optimized for technical interviews and meetings.
+    /// Uses hybrid approach: on-device for microphone, cloud for system audio.
+    /// This avoids Apple's limitation of one cloud-based recognition request at a time.
     static let `default` = TranscriptionConfiguration(
         recognitionMode: .cloudFirst,
+        sourceSpecificModes: [
+            .microphone: .onDeviceOnly,  // User speech - on-device (fast, private)
+            .systemAudio: .cloudFirst,  // Interviewer speech - cloud (accurate)
+        ],
         taskHint: .unspecified,
         partialResultConfidenceThreshold: 0.5,
         finalResultConfidenceThreshold: 0.3,
@@ -62,6 +72,7 @@ struct TranscriptionConfiguration: Sendable {
     /// Configuration optimized for accuracy (cloud-only, higher thresholds).
     static let highAccuracy = TranscriptionConfiguration(
         recognitionMode: .cloudOnly,
+        sourceSpecificModes: nil,  // Use cloud for all sources
         taskHint: .unspecified,
         partialResultConfidenceThreshold: 0.7,
         finalResultConfidenceThreshold: 0.5,
@@ -75,6 +86,7 @@ struct TranscriptionConfiguration: Sendable {
     /// Configuration optimized for speed (cloud-only, lower thresholds).
     static let highSpeed = TranscriptionConfiguration(
         recognitionMode: .cloudOnly,
+        sourceSpecificModes: nil,  // Use cloud for all sources
         taskHint: .unspecified,
         partialResultConfidenceThreshold: 0.3,
         finalResultConfidenceThreshold: 0.2,
@@ -88,6 +100,7 @@ struct TranscriptionConfiguration: Sendable {
     /// Configuration for privacy-focused on-device recognition.
     static let privacy = TranscriptionConfiguration(
         recognitionMode: .onDeviceOnly,
+        sourceSpecificModes: nil,  // Use on-device for all sources
         taskHint: .unspecified,
         partialResultConfidenceThreshold: 0.5,
         finalResultConfidenceThreshold: 0.3,

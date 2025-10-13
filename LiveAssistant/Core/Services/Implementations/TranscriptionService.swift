@@ -14,6 +14,7 @@ import Speech
 final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Sendable {
     private let configuration: TranscriptionConfiguration
 
+    // Separate recognizers per source for true isolation with different recognition modes
     private nonisolated(unsafe) var recognizers: [SpeakerType: SFSpeechRecognizer] = [:]
     private nonisolated(unsafe) var recognitionTasks: [SpeakerType: SFSpeechRecognitionTask] = [:]
     private nonisolated(unsafe) var recognitionRequests: [SpeakerType: SFSpeechAudioBufferRecognitionRequest] = [:]
@@ -22,6 +23,7 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
 
     init(configuration: TranscriptionConfiguration = .default) {
         self.configuration = configuration
+        print("🎙️ [TranscriptionService] Initialized with hybrid recognition strategy")
     }
 
     func startTranscription(
@@ -30,7 +32,7 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
     ) async -> AsyncStream<TranscriptionResult> {
         print("🎙️ [\(source)] Starting transcription service with configuration: \(configuration.recognitionMode.rawValue)")
 
-        guard let recognizer = createOrGetRecognizer(for: source) else {
+        guard let recognizer = getOrCreateRecognizer(for: source) else {
             print("❌ [\(source)] Speech recognizer not available")
             return AsyncStream { continuation in
                 continuation.finish()
@@ -44,13 +46,13 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
         return createResultStream(for: source, recognizer: recognizer, request: request, audioStream: audioStream)
     }
 
-    private func createOrGetRecognizer(for source: SpeakerType) -> SFSpeechRecognizer? {
+    private func getOrCreateRecognizer(for source: SpeakerType) -> SFSpeechRecognizer? {
+        // Create separate recognizer per source if it doesn't exist
         if recognizers[source] == nil {
             let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-            // Use .unspecified for better conversation handling instead of .dictation
             recognizer?.defaultTaskHint = configuration.taskHint
             recognizers[source] = recognizer
-            print("🎙️ [\(source)] Created speech recognizer for locale: en-US with task hint: \(configuration.taskHint.rawValue)")
+            print("🎙️ [\(source)] Created dedicated speech recognizer for locale: en-US")
         }
 
         guard let recognizer = recognizers[source], recognizer.isAvailable else {
@@ -71,8 +73,8 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
         // Set task hint at request level for optimal sentence detection
         request.taskHint = configuration.taskHint
 
-        // Determine recognition mode based on configuration and device capabilities
-        let (useOnDevice, modeDescription) = selectRecognitionMode(for: recognizer)
+        // Determine recognition mode based on source, configuration, and device capabilities
+        let (useOnDevice, modeDescription) = selectRecognitionMode(for: source, recognizer: recognizer)
         request.requiresOnDeviceRecognition = useOnDevice
         currentRecognitionMode[source] = modeDescription
 
@@ -95,11 +97,22 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
         return request
     }
 
-    /// Selects the appropriate recognition mode based on configuration and device capabilities.
-    private func selectRecognitionMode(for recognizer: SFSpeechRecognizer) -> (useOnDevice: Bool, description: String) {
+    /// Selects the appropriate recognition mode based on source, configuration, and device capabilities.
+    /// Checks for source-specific mode overrides first, then falls back to general configuration.
+    private func selectRecognitionMode(
+        for source: SpeakerType,
+        recognizer: SFSpeechRecognizer
+    ) -> (useOnDevice: Bool, description: String) {
         let supportsOnDevice = recognizer.supportsOnDeviceRecognition
 
-        switch configuration.recognitionMode {
+        // Check for source-specific mode override
+        let modeToUse = configuration.sourceSpecificModes?[source] ?? configuration.recognitionMode
+
+        if configuration.sourceSpecificModes?[source] != nil {
+            print("🎯 [\(source)] Using source-specific recognition mode: \(modeToUse.rawValue)")
+        }
+
+        switch modeToUse {
         case .cloudFirst:
             // Try cloud first, can fallback to on-device if needed
             return (false, "Cloud-First")
@@ -109,7 +122,7 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
             if supportsOnDevice {
                 return (true, "On-Device")
             } else {
-                print("⚠️ On-device recognition not supported, falling back to cloud")
+                print("⚠️ [\(source)] On-device recognition not supported, falling back to cloud")
                 return (false, "Cloud (Fallback)")
             }
 
@@ -120,7 +133,7 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
             if supportsOnDevice {
                 return (true, "On-Device")
             } else {
-                print("⚠️ On-device recognition not supported and cloud disabled")
+                print("⚠️ [\(source)] On-device recognition not supported and cloud disabled")
                 return (false, "Unavailable")
             }
         }
@@ -156,81 +169,178 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
         continuation: AsyncStream<TranscriptionResult>.Continuation
     ) {
         if let result = result {
-            let transcription = result.bestTranscription
-            let text = transcription.formattedString
-
-            // Skip empty results
-            guard !text.isEmpty else {
-                return
-            }
-
-            // Calculate better average confidence across all segments
-            let confidence = normalizeConfidence(from: transcription.segments)
-
-            let startTime = result.speechRecognitionMetadata?.speechStartTimestamp ?? 0.0
-            let duration = result.speechRecognitionMetadata?.speechDuration ?? 0.0
-            let endTime = startTime + duration
-
-            // Apply confidence filtering based on configuration
-            let threshold = confidenceThreshold(for: source, isFinal: result.isFinal)
-
-            if confidence < threshold {
-                let finalStatus = result.isFinal ? "FINAL" : "partial"
-                let confidenceStr = String(format: "%.2f", confidence)
-                let thresholdStr = String(format: "%.2f", threshold)
-                print(
-                    """
-                    ⚠️ [\(source)] [\(finalStatus)] Low confidence (\(confidenceStr)) \
-                    below threshold (\(thresholdStr)), skipping: "\(text.prefix(50))"
-                    """
-                )
-                return
-            }
-
-            // Apply throttling for partial results to avoid UI spam
-            if !result.isFinal {
-                if !shouldYieldPartialResult(for: source) {
-                    return
-                }
-                lastPartialYieldTime[source] = Date()
-            }
-
-            let transcriptionResult = TranscriptionResult(
-                text: text,
-                startTime: startTime,
-                endTime: endTime,
-                confidence: Double(confidence),
-                isFinal: result.isFinal
-            )
-
-            let finalIndicator = result.isFinal ? "FINAL" : "partial"
-            let sentenceStatus = isSentenceComplete(text) ? "complete" : "incomplete"
-            let mode = currentRecognitionMode[source] ?? "unknown"
-            let confidenceStr = String(format: "%.2f", confidence)
-            let thresholdStr = String(format: "%.2f", threshold)
-            print(
-                """
-                📝 [\(source)] [\(mode)] [\(finalIndicator)] [\(sentenceStatus)] "\(text)" \
-                (confidence: \(confidenceStr), threshold: \(thresholdStr))
-                """
-            )
-
-            continuation.yield(transcriptionResult)
-
-            if result.isFinal {
-                print("🏁 [\(source)] Recognition task completed with final result")
-                continuation.finish()
-            }
+            processRecognitionResult(result, source: source, continuation: continuation)
         }
 
         if let error = error {
-            print("❌ [\(source)] Recognition error: \(error.localizedDescription)")
+            handleRecognitionError(error, source: source, continuation: continuation)
+        }
+    }
+
+    private func processRecognitionResult(
+        _ result: SFSpeechRecognitionResult,
+        source: SpeakerType,
+        continuation: AsyncStream<TranscriptionResult>.Continuation
+    ) {
+        let transcription = result.bestTranscription
+        let text = transcription.formattedString
+
+        // Skip empty results
+        guard !text.isEmpty else {
+            return
+        }
+
+        let confidence = normalizeConfidence(from: transcription.segments)
+        let threshold = confidenceThreshold(for: source, isFinal: result.isFinal)
+
+        // Check if result should be skipped
+        if shouldSkipResult(text: text, confidence: confidence, threshold: threshold, isFinal: result.isFinal, source: source) {
+            return
+        }
+
+        // Create and yield the transcription result
+        let transcriptionResult = createTranscriptionResult(
+            from: result,
+            text: text,
+            confidence: confidence
+        )
+
+        logTranscriptionResult(
+            text: text,
+            confidence: confidence,
+            threshold: threshold,
+            isFinal: result.isFinal,
+            source: source
+        )
+
+        continuation.yield(transcriptionResult)
+
+        if result.isFinal {
+            print("🏁 [\(source)] Recognition task completed with final result")
             continuation.finish()
         }
     }
 
+    private func shouldSkipResult(
+        text: String,
+        confidence: Float,
+        threshold: Float,
+        isFinal: Bool,
+        source: SpeakerType
+    ) -> Bool {
+        // Check confidence threshold
+        if confidence < threshold {
+            let finalStatus = isFinal ? "FINAL" : "partial"
+            let confidenceStr = String(format: "%.2f", confidence)
+            let thresholdStr = String(format: "%.2f", threshold)
+            print(
+                """
+                ⚠️ [\(source)] [\(finalStatus)] Low confidence (\(confidenceStr)) \
+                below threshold (\(thresholdStr)), skipping: "\(text.prefix(50))"
+                """
+            )
+            return true
+        }
+
+        // Apply throttling for partial results
+        if !isFinal {
+            if !shouldYieldPartialResult(for: source) {
+                return true
+            }
+            lastPartialYieldTime[source] = Date()
+        }
+
+        return false
+    }
+
+    private func createTranscriptionResult(
+        from result: SFSpeechRecognitionResult,
+        text: String,
+        confidence: Float
+    ) -> TranscriptionResult {
+        let startTime = result.speechRecognitionMetadata?.speechStartTimestamp ?? 0.0
+        let duration = result.speechRecognitionMetadata?.speechDuration ?? 0.0
+        let endTime = startTime + duration
+
+        return TranscriptionResult(
+            text: text,
+            startTime: startTime,
+            endTime: endTime,
+            confidence: Double(confidence),
+            isFinal: result.isFinal
+        )
+    }
+
+    private func logTranscriptionResult(
+        text: String,
+        confidence: Float,
+        threshold: Float,
+        isFinal: Bool,
+        source: SpeakerType
+    ) {
+        let finalIndicator = isFinal ? "FINAL" : "partial"
+        let sentenceStatus = isSentenceComplete(text) ? "complete" : "incomplete"
+        let mode = currentRecognitionMode[source] ?? "unknown"
+        let confidenceStr = String(format: "%.2f", confidence)
+        let thresholdStr = String(format: "%.2f", threshold)
+        print(
+            """
+            📝 [\(source)] [\(mode)] [\(finalIndicator)] [\(sentenceStatus)] "\(text)" \
+            (confidence: \(confidenceStr), threshold: \(thresholdStr))
+            """
+        )
+    }
+
+    private func handleRecognitionError(
+        _ error: Error,
+        source: SpeakerType,
+        continuation: AsyncStream<TranscriptionResult>.Continuation
+    ) {
+        let errorDescription = error.localizedDescription
+        print("❌ [\(source)] Recognition error: \(errorDescription)")
+
+        // Check if this is a "No speech detected" error (not fatal)
+        if errorDescription.contains("No speech detected") {
+            print("⚠️ [\(source)] No speech detected - this is normal, continuing to listen...")
+            return
+        }
+
+        // For other errors, finish the stream
+        continuation.finish()
+    }
+
+    func stopTranscription(source: SpeakerType) async {
+        print("🛑 [\(source)] Stopping transcription")
+
+        recognitionTasks[source]?.cancel()
+        recognitionTasks[source] = nil
+
+        recognitionRequests[source]?.endAudio()
+        recognitionRequests[source] = nil
+
+        // Remove the recognizer for this source
+        recognizers[source] = nil
+
+        print("✅ [\(source)] Transcription stopped, recognizer released")
+    }
+
+    func stopAll() async {
+        print("🛑 Stopping all transcription tasks")
+        for source in SpeakerType.allCases {
+            recognitionTasks[source]?.cancel()
+            recognitionTasks[source] = nil
+            recognitionRequests[source]?.endAudio()
+            recognitionRequests[source] = nil
+            recognizers[source] = nil
+        }
+        print("✅ All transcription stopped, all recognizers released")
+    }
+}
+
+// MARK: - Helper Methods
+extension TranscriptionService {
     /// Calculates average confidence across all transcription segments.
-    private func normalizeConfidence(from segments: [SFTranscriptionSegment]) -> Float {
+    fileprivate func normalizeConfidence(from segments: [SFTranscriptionSegment]) -> Float {
         guard !segments.isEmpty else { return 0.0 }
 
         let totalConfidence = segments.reduce(0.0) { $0 + $1.confidence }
@@ -239,23 +349,21 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
 
     /// Determines the confidence threshold for a given source and result type.
     /// System audio typically has lower confidence scores than microphone, so use lower thresholds.
-    /// For system audio partial results, allow very low confidence as they improve over time.
-    private func confidenceThreshold(for source: SpeakerType, isFinal: Bool) -> Float {
-        if source == .systemAudio {
-            if isFinal {
-                // Keep reasonable threshold for final results
-                return configuration.finalResultConfidenceThreshold * 0.6
-            } else {
-                // Allow all partial results for system audio (confidence improves over time)
-                return 0.0
-            }
+    /// For partial results, allow very low confidence as they improve over time.
+    fileprivate func confidenceThreshold(for source: SpeakerType, isFinal: Bool) -> Float {
+        if isFinal {
+            // Different final thresholds for each source
+            return source == .systemAudio
+                ? configuration.finalResultConfidenceThreshold * 0.6
+                : configuration.finalResultConfidenceThreshold
         } else {
-            return isFinal ? configuration.finalResultConfidenceThreshold : configuration.partialResultConfidenceThreshold
+            // Allow all partial results for both sources (confidence improves over time)
+            return 0.0
         }
     }
 
     /// Checks if a sentence appears complete based on punctuation.
-    private func isSentenceComplete(_ text: String) -> Bool {
+    fileprivate func isSentenceComplete(_ text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let lastChar = trimmed.last else { return false }
 
@@ -264,7 +372,7 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
     }
 
     /// Determines if enough time has passed to yield another partial result.
-    private func shouldYieldPartialResult(for source: SpeakerType) -> Bool {
+    fileprivate func shouldYieldPartialResult(for source: SpeakerType) -> Bool {
         guard let lastYield = lastPartialYieldTime[source] else {
             return true  // First partial result
         }
@@ -273,41 +381,26 @@ final class TranscriptionService: TranscriptionServiceProtocol, @unchecked Senda
         return timeSinceLastYield >= configuration.partialResultThrottleInterval
     }
 
-    private func feedAudioBuffers(
+    fileprivate func feedAudioBuffers(
         to request: SFSpeechAudioBufferRecognitionRequest,
         from audioStream: AsyncStream<AudioBuffer>,
         source: SpeakerType
     ) {
         Task {
             var bufferCount = 0
+            print("🎙️ [\(source)] Starting to feed audio buffers to recognition request")
             for await audioBuffer in audioStream {
                 bufferCount += 1
                 if bufferCount == 1 {
-                    print("🎙️ [\(source)] First audio buffer appended to recognition request")
+                    print("🎙️ [\(source)] Appending first audio buffer to recognition request")
                 }
-                if bufferCount % 10 == 0 {
-                    print("🎙️ [\(source)] Appended \(bufferCount) audio buffers to recognition request")
+                if bufferCount % 100 == 0 {
+                    print("🎙️ [\(source)] Appended \(bufferCount) buffers to recognition request")
                 }
                 request.append(audioBuffer.buffer)
             }
-            print("🎙️ [\(source)] Audio stream ended, total buffers: \(bufferCount)")
+            print("🎙️ [\(source)] Audio stream ended, total buffers fed: \(bufferCount)")
             request.endAudio()
-        }
-    }
-
-    func stopTranscription(source: SpeakerType) async {
-        recognitionTasks[source]?.cancel()
-        recognitionTasks[source] = nil
-
-        recognitionRequests[source]?.endAudio()
-        recognitionRequests[source] = nil
-
-        recognizers[source] = nil
-    }
-
-    func stopAll() async {
-        for source in SpeakerType.allCases {
-            await stopTranscription(source: source)
         }
     }
 }
