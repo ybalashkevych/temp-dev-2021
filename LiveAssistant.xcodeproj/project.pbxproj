@@ -32,6 +32,7 @@
 		5A07D1AB2E9BC4DA00C66231 /* LiveAssistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiveAssistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A07D1BA2E9BC4DC00C66231 /* LiveAssistantTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiveAssistantTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A07D1C42E9BC4DC00C66231 /* LiveAssistantUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiveAssistantUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A20775B2E9C703300EF0401 /* LiveAssistant.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = LiveAssistant.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -82,6 +83,7 @@
 		5A07D1A22E9BC4DA00C66231 = {
 			isa = PBXGroup;
 			children = (
+				5A20775B2E9C703300EF0401 /* LiveAssistant.xctestplan */,
 				5A07D1AD2E9BC4DA00C66231 /* LiveAssistant */,
 				5A07D1BD2E9BC4DC00C66231 /* LiveAssistantTests */,
 				5A07D1C72E9BC4DC00C66231 /* LiveAssistantUITests */,
@@ -458,51 +460,51 @@
 		5A07D1CF2E9BC4DC00C66231 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-			CODE_SIGN_ENTITLEMENTS = LiveAssistant/LiveAssistant.entitlements;
-			CODE_SIGN_STYLE = Automatic;
-			COMBINE_HIDPI_IMAGES = YES;
-			CURRENT_PROJECT_VERSION = 1;
-			DEVELOPMENT_TEAM = J746DUJAJY;
-			ENABLE_APP_SANDBOX = NO;
-			ENABLE_HARDENED_RUNTIME = YES;
-			ENABLE_PREVIEWS = YES;
-			ENABLE_USER_SCRIPT_SANDBOXING = NO;
-			ENABLE_USER_SELECTED_FILES = readonly;
-			GENERATE_INFOPLIST_FILE = NO;
-			INFOPLIST_FILE = LiveAssistant/Info.plist;
-			INFOPLIST_KEY_NSHumanReadableCopyright = "";
-			LD_RUNPATH_SEARCH_PATHS = (
-				"$(inherited)",
-				"@executable_path/../Frameworks",
-			);
-			MARKETING_VERSION = 1.0;
-			PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistant;
-			PRODUCT_NAME = "$(TARGET_NAME)";
-			REGISTER_APP_GROUPS = YES;
-			STRING_CATALOG_GENERATE_SYMBOLS = YES;
-			SWIFT_APPROACHABLE_CONCURRENCY = YES;
-			SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-			SWIFT_EMIT_LOC_STRINGS = YES;
-			SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-			SWIFT_VERSION = 5.0;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LiveAssistant/LiveAssistant.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LiveAssistant/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = fundamental.LiveAssistant;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
 		};
-		name = Debug;
-	};
-	5A07D1D02E9BC4DC00C66231 /* Release */ = {
-		isa = XCBuildConfiguration;
-		buildSettings = {
-			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-			ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-		CODE_SIGN_ENTITLEMENTS = LiveAssistant/LiveAssistant.entitlements;
-		CODE_SIGN_STYLE = Automatic;
-			COMBINE_HIDPI_IMAGES = YES;
-			CURRENT_PROJECT_VERSION = 1;
-			DEVELOPMENT_TEAM = J746DUJAJY;
-			ENABLE_APP_SANDBOX = NO;
-			ENABLE_HARDENED_RUNTIME = YES;
-			ENABLE_PREVIEWS = YES;
+		5A07D1D02E9BC4DC00C66231 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LiveAssistant/LiveAssistant.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J746DUJAJY;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = NO;

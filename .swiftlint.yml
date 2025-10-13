@@ -122,15 +122,6 @@ force_cast: warning
 force_try: warning
 force_unwrapping: warning
 
-# Custom rules
-custom_rules:
-  double_space:
-    name: "Double space"
-    regex: "([a-z,A-Z] \\s+)"
-    message: "Double space between keywords"
-    match_kinds: keyword
-    severity: warning
-
 # Reporter type
 reporter: "xcode"
 

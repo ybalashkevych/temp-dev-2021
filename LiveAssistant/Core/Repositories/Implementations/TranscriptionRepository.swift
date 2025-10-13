@@ -18,6 +18,8 @@ final class TranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked
     private nonisolated(unsafe) var currentSession: TranscriptionSession?
     private nonisolated(unsafe) var segmentContinuations: [UUID: AsyncStream<TranscriptionSegment>.Continuation] = [:]
     private nonisolated(unsafe) var activeTasks: [Task<Void, Never>] = []
+    private nonisolated(unsafe) var qualityMetrics: [SpeakerType: [TranscriptionResult]] = [:]
+    private nonisolated(unsafe) var sessionStartTime: Date?
 
     init(
         microphoneService: MicrophoneAudioServiceProtocol,
@@ -35,6 +37,12 @@ final class TranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked
         // Ensure we have a session
         if currentSession == nil {
             currentSession = TranscriptionSession()
+            sessionStartTime = Date()
+        }
+
+        // Initialize quality tracking
+        if qualityMetrics[.microphone] == nil {
+            qualityMetrics[.microphone] = []
         }
 
         // Start microphone capture
@@ -61,6 +69,12 @@ final class TranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked
         // Ensure we have a session
         if currentSession == nil {
             currentSession = TranscriptionSession()
+            sessionStartTime = Date()
+        }
+
+        // Initialize quality tracking
+        if qualityMetrics[.systemAudio] == nil {
+            qualityMetrics[.systemAudio] = []
         }
 
         // Start system audio capture
@@ -126,13 +140,23 @@ final class TranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked
     func clearSession() async {
         await stopAll()
         currentSession = nil
+        qualityMetrics.removeAll()
+        sessionStartTime = nil
     }
 
     // MARK: - Private Methods
 
     private func processTranscriptionResult(_ result: TranscriptionResult, speaker: SpeakerType) async {
+        print("🔄 [Repository] Processing result for [\(speaker)]: \"\(result.text)\" (isFinal: \(result.isFinal))")
+
+        // Track result for quality metrics
+        if qualityMetrics[speaker] != nil {
+            qualityMetrics[speaker]?.append(result)
+        }
+
         // Analyze the text
         let analyzed = await textAnalysisService.analyze(text: result.text)
+        print("🔍 [Repository] After analysis: \"\(analyzed.normalizedText)\" (isQuestion: \(analyzed.isQuestion))")
 
         // Create transcription segment
         let segment = TranscriptionSegment(
@@ -148,11 +172,48 @@ final class TranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked
         // Add to session
         if result.isFinal {
             currentSession?.segments.append(segment)
+            print("✅ [Repository] Added FINAL segment to session")
+        } else {
+            print("⏳ [Repository] Partial segment, not adding to session yet")
         }
 
         // Broadcast to all listeners
+        let listenerCount = segmentContinuations.count
+        print("📢 [Repository] Broadcasting segment to \(listenerCount) listeners")
         for continuation in segmentContinuations.values {
             continuation.yield(segment)
         }
+    }
+
+    /// Gets quality metrics for a specific speaker.
+    func getQualityMetrics(for speaker: SpeakerType) -> TranscriptionQuality? {
+        guard let results = qualityMetrics[speaker],
+            !results.isEmpty,
+            let startTime = sessionStartTime
+        else {
+            return nil
+        }
+
+        return TranscriptionQuality.from(
+            results: results,
+            recognitionMode: "Cloud-First",  // Dynamically set from TranscriptionService
+            startTime: startTime,
+            endTime: Date()
+        )
+    }
+
+    /// Gets combined quality metrics for all active speakers.
+    func getCombinedQualityMetrics() -> TranscriptionQuality? {
+        let allResults = qualityMetrics.values.flatMap { $0 }
+        guard !allResults.isEmpty, let startTime = sessionStartTime else {
+            return nil
+        }
+
+        return TranscriptionQuality.from(
+            results: allResults,
+            recognitionMode: "Cloud-First",
+            startTime: startTime,
+            endTime: Date()
+        )
     }
 }

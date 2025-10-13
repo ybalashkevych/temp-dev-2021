@@ -61,9 +61,14 @@ final class AppComponent {
             SystemAudioService()
         }.inObjectScope(.container)
 
-        // Transcription Service
+        // Vocabulary Service
+        container.register(VocabularyServiceProtocol.self) { _ in
+            VocabularyService.shared
+        }.inObjectScope(.container)
+
+        // Transcription Service with default configuration
         container.register(TranscriptionServiceProtocol.self) { _ in
-            TranscriptionService()
+            TranscriptionService(configuration: .default)
         }.inObjectScope(.container)
 
         // Text Analysis Service

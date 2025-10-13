@@ -1,0 +1,39 @@
+{
+  "configurations" : [
+    {
+      "id" : "63BDF94E-B70E-42A2-AA16-028C6C1385E9",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:LiveAssistant.xcodeproj",
+      "identifier" : "5A07D1AA2E9BC4DA00C66231",
+      "name" : "LiveAssistant"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LiveAssistant.xcodeproj",
+        "identifier" : "5A07D1B92E9BC4DC00C66231",
+        "name" : "LiveAssistantTests"
+      }
+    },
+    {
+      "enabled" : false,
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:LiveAssistant.xcodeproj",
+        "identifier" : "5A07D1C32E9BC4DC00C66231",
+        "name" : "LiveAssistantUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

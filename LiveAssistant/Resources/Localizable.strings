@@ -92,4 +92,45 @@
 "settings.profile" = "Profile";
 "settings.about" = "About";
 
+// MARK: - Recognition Modes
+"recognition_mode.cloud_first" = "Cloud-First";
+"recognition_mode.on_device_first" = "On-Device First";
+"recognition_mode.cloud_only" = "Cloud Only";
+"recognition_mode.on_device_only" = "On-Device Only";
+"recognition_mode.description" = "Recognition mode determines where speech processing occurs";
+"recognition_mode.cloud_first.description" = "Uses cloud for better accuracy, falls back to on-device if needed";
+"recognition_mode.on_device_first.description" = "Prioritizes privacy with on-device processing";
+"recognition_mode.cloud_only.description" = "Always uses cloud processing for maximum accuracy";
+"recognition_mode.on_device_only.description" = "Always uses on-device processing for maximum privacy";
+
+// MARK: - Quality Metrics
+"quality.title" = "Transcription Quality";
+"quality.recognition_mode" = "Recognition Mode";
+"quality.average_confidence" = "Average Confidence";
+"quality.minimum_confidence" = "Minimum Confidence";
+"quality.maximum_confidence" = "Maximum Confidence";
+"quality.total_segments" = "Total Segments";
+"quality.final_segments" = "Final Segments";
+"quality.partial_segments" = "Partial Segments";
+"quality.average_duration" = "Average Duration";
+"quality.total_duration" = "Total Duration";
+"quality.completion_rate" = "Completion Rate";
+"quality.unavailable" = "Quality metrics unavailable";
+
+// MARK: - Recognition Status
+"recognition.status.cloud" = "Cloud";
+"recognition.status.on_device" = "On-Device";
+"recognition.status.cloud_fallback" = "Cloud (Fallback)";
+"recognition.status.unavailable" = "Unavailable";
+
+// MARK: - Vocabulary
+"vocabulary.category.programming_languages" = "Programming Languages";
+"vocabulary.category.frameworks_libraries" = "Frameworks & Libraries";
+"vocabulary.category.development_tools" = "Development Tools";
+"vocabulary.category.cloud_infrastructure" = "Cloud & Infrastructure";
+"vocabulary.category.concepts_patterns" = "Concepts & Patterns";
+"vocabulary.category.companies_products" = "Companies & Products";
+"vocabulary.custom_terms" = "Custom Technical Terms";
+"vocabulary.terms_loaded" = "%d terms loaded";
+
 

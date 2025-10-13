@@ -105,10 +105,8 @@ final class TranscriptionViewModel {
         // Start listening to segments
         startListeningToSegments()
 
-        // Start with microphone enabled by default
-        if !isMicrophoneEnabled {
-            await toggleMicrophone()
-        }
+        // Start both sources simultaneously
+        await startBothSources()
 
         isRecording = true
     }
@@ -175,18 +173,66 @@ final class TranscriptionViewModel {
     // MARK: - Private Methods
 
     private func startListeningToSegments() {
+        print("🎧 [ViewModel] Starting to listen for segments")
         segmentStreamTask = Task { [weak self] in
-            guard let self = self else { return }
+            guard let self = self else {
+                print("⚠️ [ViewModel] Self is nil, cannot listen to segments")
+                return
+            }
 
             let stream = self.transcriptionRepository.streamSegments()
+            print("✅ [ViewModel] Got segment stream, waiting for segments...")
 
             for await segment in stream {
+                print("🔔 [ViewModel] Received segment from stream")
                 await self.handleNewSegment(segment)
             }
+
+            print("🔚 [ViewModel] Segment stream ended")
         }
     }
 
+    private func startBothSources() async {
+        var errors: [String] = []
+
+        // Start microphone
+        do {
+            print("🎤 Starting microphone capture...")
+            try await transcriptionRepository.startMicrophone()
+            isMicrophoneEnabled = true
+            print("✅ Microphone started successfully")
+        } catch {
+            let errorMsg = "Microphone: \(error.localizedDescription)"
+            errors.append(errorMsg)
+            print("❌ Failed to start microphone: \(error.localizedDescription)")
+        }
+
+        // Start system audio
+        do {
+            print("🔊 Starting system audio capture...")
+            try await transcriptionRepository.startSystemAudio()
+            isSystemAudioEnabled = true
+            print("✅ System audio started successfully")
+        } catch {
+            let errorMsg = "System Audio: \(error.localizedDescription)"
+            errors.append(errorMsg)
+            print("❌ Failed to start system audio: \(error.localizedDescription)")
+        }
+
+        // Set error message if any sources failed
+        if !errors.isEmpty {
+            self.error = "Failed to start some sources: \(errors.joined(separator: ", "))"
+        }
+
+        // Log final status
+        print("📊 Sources started - Microphone: \(isMicrophoneEnabled), System Audio: \(isSystemAudioEnabled)")
+    }
+
     private func handleNewSegment(_ segment: TranscriptionSegment) async {
+        let finalStatus = segment.isFinal ? "FINAL" : "partial"
+        print("📥 [ViewModel] Received [\(finalStatus)] segment from [\(segment.speaker)]: \"\(segment.text)\"")
+        print("📊 [ViewModel] Current segments count before: \(segments.count)")
+
         if segment.isFinal {
             // Replace any partial segment with the same approximate timing with the final one
             if let index = segments.firstIndex(where: {
@@ -194,8 +240,10 @@ final class TranscriptionViewModel {
                     && $0.speaker == segment.speaker
                     && abs($0.startTime - segment.startTime) < 1.0
             }) {
+                print("🔄 [ViewModel] Replacing partial segment at index \(index)")
                 segments[index] = segment
             } else {
+                print("➕ [ViewModel] Appending new FINAL segment")
                 segments.append(segment)
             }
         } else {
@@ -205,10 +253,14 @@ final class TranscriptionViewModel {
                     && $0.speaker == segment.speaker
                     && abs($0.startTime - segment.startTime) < 1.0
             }) {
+                print("🔄 [ViewModel] Updating partial segment at index \(index)")
                 segments[index] = segment
             } else {
+                print("➕ [ViewModel] Appending new partial segment")
                 segments.append(segment)
             }
         }
+
+        print("📊 [ViewModel] Current segments count after: \(segments.count)")
     }
 }
