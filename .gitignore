@@ -122,5 +122,10 @@ Crashlytics.framework/
 # SwiftGen Generated Files
 LiveAssistant/Core/Generated/
 
+# Background Automation logs
+logs/*.log
+logs/*.error.log
+.cursor-feedback.txt
+
 # App specific
 # Add any app-specific files or directories to ignore
