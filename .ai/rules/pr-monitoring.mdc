@@ -1,0 +1,353 @@
+# PR Monitoring and Automated Response
+
+This document defines how Cursor should behave when processing Pull Request feedback through the background automation system.
+
+## Overview
+
+When the background daemon detects a PR needing attention (via "needs-changes" label), it creates a `.cursor-feedback.txt` file containing all feedback from comments and reviews. Cursor reads this file and makes appropriate changes following these rules.
+
+## Workflow
+
+### 1. Read and Analyze Feedback
+
+When `.cursor-feedback.txt` exists:
+
+**Parse the feedback file:**
+- Read all reviews requiring changes
+- Read all discussion comments
+- Identify action items
+- Prioritize by urgency: bugs > architecture violations > style > suggestions
+
+**Categorize feedback:**
+- **Critical** - Bugs, security issues, architecture violations
+- **High** - Functionality changes, test requirements
+- **Medium** - Code style, naming, documentation
+- **Low** - Suggestions, optimizations
+
+### 2. Make Changes Following Architecture
+
+**CRITICAL: Follow these rules strictly:**
+
+✅ **ViewModels:**
+- Use `@Observable` and `@MainActor`
+- Access data through Repositories ONLY (never Services directly)
+- Keep state as `private(set)`
+- Variable name must be `vm`
+
+✅ **Repositories:**
+- Protocol-based interfaces
+- Business logic lives here
+- Coordinate multiple Services
+
+✅ **Services:**
+- Protocol-based interfaces
+- Handle external interactions only (API, SwiftData, system)
+- No business logic
+
+✅ **Code Quality:**
+- All strings use `Strings` enum (SwiftGen)
+- All assets use `Asset` enum (SwiftGen)
+- No force unwraps without justification
+- Functions under 60 lines (warning) / 100 lines (error)
+- Type bodies under 300 lines (warning) / 400 lines (error)
+
+✅ **Testing:**
+- Use Swift Testing framework (`@Test`, `import Testing`)
+- Test both success and failure cases
+- Mock dependencies using protocols
+- Maintain 90%+ coverage
+
+### 3. Address Each Feedback Item
+
+For each piece of feedback:
+
+**If it's a code fix:**
+1. Locate the relevant code
+2. Make the requested change
+3. Verify it follows architecture rules
+4. Update related tests
+5. Mark as addressed in your mental checklist
+
+**If it's a style issue:**
+1. Check if SwiftLint/swift-format will auto-fix
+2. If not, make manual changes
+3. Ensure consistency across similar code
+
+**If it conflicts with architecture:**
+1. Prioritize architecture compliance
+2. Make the change in an architecture-compliant way
+3. Note the conflict in response comment
+4. Explain why alternative approach was used
+
+**If it's unclear:**
+1. Make best effort based on context
+2. Note need for clarification in response
+3. Ask specific questions
+
+### 4. Handle Inline Warnings
+
+If SwiftLint/swift-format violations appear as inline comments on GitHub:
+
+1. Read each inline comment
+2. Navigate to the specific file and line
+3. Fix the violation
+4. Run linter again to verify fix
+5. Continue until all violations resolved
+
+**Common fixes:**
+- `force_unwrapping`: Use optional binding or guard
+- `line_length`: Break into multiple lines
+- `function_body_length`: Extract helper functions
+- `type_body_length`: Split into extensions or separate files
+
+### 5. Run Self-Review
+
+Before committing any changes:
+
+```bash
+./scripts/cursor-self-review.sh
+```
+
+**Must pass:**
+- ✅ SwiftLint strict (zero warnings)
+- ✅ swift-format validation
+- ✅ Build successful
+- ✅ All tests pass
+- ✅ Architecture compliance
+- ✅ No hardcoded strings/assets
+
+**If self-review fails:**
+1. Fix the issues
+2. Run self-review again
+3. Repeat until all checks pass
+4. Do NOT proceed without passing
+
+### 6. Commit Changes
+
+Use clear, descriptive commit messages:
+
+```
+Address PR feedback: <brief summary>
+
+- Fixed <specific issue 1>
+- Updated <specific issue 2>
+- Improved <specific issue 3>
+
+Closes #<issue-number> (if applicable)
+```
+
+**Commit strategy:**
+- Make logical, atomic commits
+- One commit per logical change group
+- Clear messages explaining what and why
+
+### 7. Respond to Feedback
+
+After all changes are made and committed:
+
+```bash
+./scripts/cursor-respond-to-feedback.sh <PR_NUMBER> "<summary of changes>"
+```
+
+**Summary should include:**
+- Brief overview of what was changed
+- List of specific fixes
+- Any clarifications needed
+- Notes about architecture decisions
+
+**Example summaries:**
+
+**Good:**
+```
+Fixed SwiftLint violations and updated ViewModel architecture
+
+- Removed force unwraps in TranscriptionViewModel
+- Changed ViewModel to access Repository instead of Service directly
+- Added tests for error handling scenarios
+- Updated documentation
+```
+
+**Bad:**
+```
+Fixed stuff
+```
+
+## Response Templates
+
+### Successfully Addressed All Feedback
+
+```markdown
+✅ **Feedback Addressed**
+
+Made the following changes:
+- Changed X to Y as requested in [comment link]
+- Fixed Z violation by [specific fix]
+- Updated tests to cover [scenario]
+- Improved documentation for [feature]
+
+All self-review checks passed:
+- ✅ SwiftLint: 0 warnings
+- ✅ swift-format: passed
+- ✅ Build: successful
+- ✅ Tests: all passing
+- ✅ Coverage: 92%
+
+Ready for re-review.
+```
+
+### Need Clarification
+
+```markdown
+⚠️ **Need Clarification**
+
+Working on addressing feedback, but need clarification on:
+
+**Question 1:** [specific question about comment X]
+- Current implementation: [description]
+- Suggested approach: [description]
+- Concern: [what's unclear]
+
+Current progress:
+- ✅ Fixed [item 1]
+- ✅ Updated [item 2]
+- ⏳ Working on [item 3] (pending clarification)
+- ❓ [item 4] (need guidance)
+
+Ready to proceed once clarified.
+```
+
+### Conflicts with Architecture
+
+```markdown
+✅ **Feedback Addressed with Architecture Considerations**
+
+Made changes to address all feedback while maintaining architecture compliance:
+
+**[Feedback item]:**
+- Requested: [original request]
+- Implemented: [alternative approach]
+- Reason: [architectural constraint]
+- Benefits: [why this approach is better]
+
+All changes follow MVVM pattern and architecture guidelines.
+
+Other changes:
+- ✅ [item 1]
+- ✅ [item 2]
+
+Ready for re-review. Open to discussing the architectural approach if needed.
+```
+
+## Error Handling
+
+### Self-Review Failures
+
+**If SwiftLint fails:**
+1. Read the violations carefully
+2. Fix each one
+3. Run `swiftlint --fix` for auto-fixable issues
+4. Manually fix remaining issues
+5. Re-run self-review
+
+**If tests fail:**
+1. Read test failure messages
+2. Identify what broke
+3. Fix the issue (code or test)
+4. Ensure related tests still pass
+5. Re-run tests
+
+**If build fails:**
+1. Read compiler errors
+2. Fix syntax/type errors
+3. Resolve any import issues
+4. Re-run build
+
+### Git Conflicts
+
+**If conflicts occur:**
+1. Fetch latest main: `git fetch origin main`
+2. Rebase PR branch: `git rebase origin/main`
+3. Resolve conflicts favoring:
+   - Architecture compliance
+   - Keeping both changes when possible
+   - Latest patterns over legacy code
+4. Re-run tests after resolving
+5. Continue rebase
+
+### Push Failures
+
+**If push is rejected:**
+1. Pull latest changes: `git pull origin <branch>`
+2. Resolve any conflicts
+3. Re-run tests
+4. Push again
+
+## Best Practices
+
+### DO ✅
+
+- Read ALL feedback before starting
+- Make changes incrementally and test
+- Follow architecture rules strictly
+- Write clear commit messages
+- Run self-review before every response
+- Ask for clarification when unsure
+- Keep responses professional and clear
+- Test thoroughly before pushing
+
+### DON'T ❌
+
+- Skip reading any feedback
+- Make changes without understanding
+- Violate architecture to "fix" something
+- Push without running self-review
+- Commit untested code
+- Use force unwraps to "fix" optional issues
+- Hardcode strings or assets
+- Rush through feedback
+
+## Monitoring Behavior
+
+When running as part of the background daemon:
+
+**Timing:**
+- Daemon checks GitHub every 60 seconds
+- Process one PR at a time
+- Allow time for changes and testing
+
+**Logging:**
+- All actions logged to `logs/cursor-daemon.log`
+- Per-PR logs in `logs/pr-<number>.log`
+- Review logs to understand automation behavior
+
+**Rate Limits:**
+- GitHub API: 5000 calls/hour
+- Daemon uses minimal API calls
+- Respect rate limits, slow down if needed
+
+## Continuous Improvement
+
+After processing each PR:
+
+**Reflect on:**
+- What feedback patterns appear often?
+- What changes can be automated?
+- What documentation needs updating?
+- What rules need clarification?
+
+**Update:**
+- This document with learnings
+- Architecture rules if patterns emerge
+- Automation scripts for efficiency
+- Self-review checks for common issues
+
+## References
+
+- **ARCHITECTURE.md** - Complete architecture rules
+- **CODING_STANDARDS.md** - Code style guidelines
+- **WORKFLOW.md** - Development workflow
+- **BACKGROUND_AUTOMATION.md** - Automation system details
+
+---
+
+These rules ensure consistent, high-quality responses to PR feedback while maintaining strict adherence to project architecture and standards.
