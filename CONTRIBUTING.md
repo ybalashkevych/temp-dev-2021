@@ -694,9 +694,7 @@ chmod +x scripts/cursor-pr.sh
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture patterns and coding standards
 - [CHANGELOG.md](CHANGELOG.md) - Project changelog
-- [docs/setup/SETUP.md](docs/setup/SETUP.md) - Detailed setup guide
-- [docs/setup/automation.md](docs/setup/automation.md) - Background automation
-- [docs/troubleshooting/TROUBLESHOOTING.md](docs/troubleshooting/TROUBLESHOOTING.md) - Solutions to common issues
+- [CONTRIBUTING.md](CONTRIBUTING.md) - This file - contributing guidelines
 - [.cursor/rules/workflow-automation.mdc](.cursor/rules/workflow-automation.mdc) - Cursor automation rules
 - [GitHub Actions](.github/workflows/) - CI/CD workflows
 - [Scripts](scripts/) - Automation scripts
@@ -708,9 +706,8 @@ chmod +x scripts/cursor-pr.sh
 For questions or issues:
 
 1. Check this document
-2. Review [ARCHITECTURE.md](./ARCHITECTURE.md)
-3. Check [docs/troubleshooting/TROUBLESHOOTING.md](docs/troubleshooting/TROUBLESHOOTING.md)
-4. Search existing issues
+2. Review [ARCHITECTURE.md](./ARCHITECTURE.md) and [CONTRIBUTING.md](./CONTRIBUTING.md)
+3. Search existing issues
 5. Create a new issue with details
 
 ---

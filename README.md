@@ -321,19 +321,15 @@ private func registerRepositories() {
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - **Architecture patterns & coding standards**
 - [CHANGELOG.md](./CHANGELOG.md) - Project changelog
 
-### Setup & Configuration
-- [Setup Guide](./docs/setup/SETUP.md) - Complete development environment setup
-- [Automation Setup](./docs/setup/automation.md) - Background PR automation guide
-- [SwiftGen Guide](./docs/setup/swiftgen.md) - SwiftGen integration and usage
+### Documentation
 
-### Troubleshooting
-- [Troubleshooting Guide](./docs/troubleshooting/TROUBLESHOOTING.md) - Solutions to common issues
+All project documentation is in the root directory:
 
-### Feature Documentation
-- [Transcription Usage](./docs/features/transcription.md) - Transcription feature guide
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Architecture patterns and coding standards
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contributing guidelines and workflow
+- [CHANGELOG.md](./CHANGELOG.md) - Project history and changes
 
-### Historical Documentation
-- [History](./docs/history/) - Archived status reports and fix documentation
+For setup, troubleshooting, and contribution guidelines, see the files above.
 
 ## 🤝 Contributing
 
