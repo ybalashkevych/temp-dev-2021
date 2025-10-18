@@ -7,7 +7,6 @@
     
     <key>ProgramArguments</key>
     <array>
-        <!-- CHANGE THIS: Update to your actual project path -->
         <string>/Users/YOUR_USERNAME/Desktop/Projects/LiveAssistant/scripts/cursor-daemon.sh</string>
     </array>
     

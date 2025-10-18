@@ -117,16 +117,24 @@ import json, sys
 data = json.load(sys.stdin)
 total_lines = 0
 covered_lines = 0
-excluded_patterns = ['Views/', 'View.swift', 'Tests/', 'Generated/', 'Components/']
+
+def should_exclude(filepath):
+    # Exclude directories
+    if any(pattern in filepath for pattern in ['/Views/', '/Tests/', '/Generated/', '/Components/', '/UITests/']):
+        return True
+    # Exclude files ending with View.swift (but not ViewModel.swift)
+    if filepath.endswith('View.swift') and not filepath.endswith('ViewModel.swift'):
+        return True
+    return False
 
 for target in data.get('targets', []):
     for file_data in target.get('files', []):
         filepath = file_data.get('path', '')
-        if any(p in filepath for p in excluded_patterns):
+        if should_exclude(filepath):
             continue
-        for func in file_data.get('functions', []):
-            total_lines += func.get('executableLines', 0)
-            covered_lines += func.get('coveredLines', 0)
+        # Use file-level coverage data
+        total_lines += file_data.get('executableLines', 0)
+        covered_lines += file_data.get('coveredLines', 0)
 
 if total_lines > 0:
     print(f'{(covered_lines / total_lines) * 100:.1f}')
@@ -302,10 +310,14 @@ import sys
 with open('coverage_reports/coverage.json', 'r') as f:
     coverage_data = json.load(f)
 
-excluded_patterns = ['Views/', 'View.swift', 'Tests/', 'Generated/', 'UITests/', 'Components/']
-
 def should_exclude(filepath):
-    return any(pattern in filepath for pattern in excluded_patterns)
+    # Exclude directories
+    if any(pattern in filepath for pattern in ['/Views/', '/Tests/', '/Generated/', '/Components/', '/UITests/']):
+        return True
+    # Exclude files ending with View.swift (but not ViewModel.swift)
+    if filepath.endswith('View.swift') and not filepath.endswith('ViewModel.swift'):
+        return True
+    return False
 
 files_coverage = []
 total_lines = 0
@@ -318,12 +330,9 @@ for target in coverage_data.get('targets', []):
         if should_exclude(filepath):
             continue
         
-        file_lines = 0
-        file_covered = 0
-        
-        for function in file_data.get('functions', []):
-            file_lines += function.get('executableLines', 0)
-            file_covered += function.get('coveredLines', 0)
+        # Use file-level coverage data
+        file_lines = file_data.get('executableLines', 0)
+        file_covered = file_data.get('coveredLines', 0)
         
         if file_lines > 0:
             file_pct = (file_covered / file_lines) * 100

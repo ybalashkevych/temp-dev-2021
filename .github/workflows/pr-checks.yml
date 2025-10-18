@@ -170,40 +170,30 @@ jobs:
           
           total_lines = 0
           covered_lines = 0
-          excluded_patterns = [
-              'Views/',
-              'View.swift',
-              'Components/',
-              'Models/',
-              'App/',
-              'Tests/',
-              'Generated/',
-              'UITests/',
-              '.xctest'
-          ]
           
           def should_exclude(filepath):
-              return any(pattern in filepath for pattern in excluded_patterns)
+              # Exclude directories
+              if any(pattern in filepath for pattern in ['/Views/', '/Tests/', '/Generated/', '/Components/', '/UITests/', '/Models/', '/App/']):
+                  return True
+              # Exclude files ending with View.swift (but not ViewModel.swift)
+              if filepath.endswith('View.swift') and not filepath.endswith('ViewModel.swift'):
+                  return True
+              # Exclude test-related files
+              if '.xctest' in filepath:
+                  return True
+              return False
           
-          def process_target(target):
-              global total_lines, covered_lines
-              
+          # Process all targets
+          for target in coverage_data.get('targets', []):
               for file_data in target.get('files', []):
                   filepath = file_data.get('path', '')
                   
                   if should_exclude(filepath):
                       continue
                   
-                  for function in file_data.get('functions', []):
-                      exec_count = function.get('executableLines', 0)
-                      exec_covered = function.get('coveredLines', 0)
-                      
-                      total_lines += exec_count
-                      covered_lines += exec_covered
-          
-          # Process all targets
-          for target in coverage_data.get('targets', []):
-              process_target(target)
+                  # Use file-level coverage data
+                  total_lines += file_data.get('executableLines', 0)
+                  covered_lines += file_data.get('coveredLines', 0)
           
           if total_lines > 0:
               coverage_pct = (covered_lines / total_lines) * 100
