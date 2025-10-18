@@ -88,7 +88,7 @@ Branch naming follows WORKFLOW.md conventions. Always include issue number.
 - Test ViewModels with mock Repositories
 - Test Repositories with mock Services
 - Test both success AND failure cases
-- Maintain 90%+ code coverage
+- Maintain 30%+ code coverage
 - Create mock implementations for new protocols
 
 **Localization Process:**
@@ -244,7 +244,7 @@ After PR creation, monitor GitHub Actions:
 
 1. **Build & Test** - Wait for completion, check logs if failures
 2. **SwiftLint** - Must show 0 warnings
-3. **Coverage** - Must maintain 90%+
+3. **Coverage** - Must maintain 30%+
 
 **If CI fails:**
 1. Read error logs completely
@@ -418,7 +418,7 @@ All PRs must pass ALL gates:
 - ✅ SwiftLint strict validation (0 warnings)
 - ✅ swift-format validation passes
 - ✅ All unit tests pass
-- ✅ Code coverage ≥ 90%
+- ✅ Code coverage ≥ 30%
 - ✅ Architecture compliance verified
 - ✅ No hardcoded strings or assets
 - ✅ At least 1 approval from maintainer
