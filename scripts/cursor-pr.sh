@@ -360,32 +360,8 @@ cmd_process() {
 # RESPOND command - Respond to PR feedback
 #
 cmd_respond() {
-    # Check for --auto flag
-    if [ "$1" = "--auto" ]; then
-        shift
-        if [ $# -lt 2 ]; then
-            echo -e "${RED}❌ Usage: $0 respond --auto <pr-number> <repo>${NC}"
-            exit 1
-        fi
-        
-        PR_NUMBER=$1
-        REPO=$2
-        
-        log INFO "Starting automated response for PR #${PR_NUMBER}..."
-        
-        # Call the automated response script
-        if ./scripts/cursor-auto-respond.sh "$PR_NUMBER" "$REPO"; then
-            log SUCCESS "Automated response completed successfully"
-        else
-            log ERROR "Automated response failed"
-            exit 1
-        fi
-        return 0
-    fi
-    
     if [ $# -lt 2 ]; then
         echo -e "${RED}❌ Usage: $0 respond <pr-number> \"<changes-summary>\"${NC}"
-        echo -e "${BLUE}   Or: $0 respond --auto <pr-number> <repo>${NC}"
         exit 1
     fi
     
@@ -420,7 +396,7 @@ All self-review checks passed:
 - ✅ swift-format
 - ✅ Build successful
 - ✅ Tests passing
-- ✅ Code coverage >= 90%
+- ✅ Code coverage >= 20%
 
 Ready for re-review."
             

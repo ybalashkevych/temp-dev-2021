@@ -76,7 +76,7 @@ The LiveAssistant project uses a fully automated development workflow:
 
 - **Issue-driven development** - All work starts from GitHub Issues
 - **Automated quality checks** - CI/CD via GitHub Actions
-- **Code coverage tracking** - Minimum 90% coverage required
+- **Code coverage tracking** - Minimum 20% coverage required
 - **Conventional commits** - Consistent PR formatting
 - **Self-review process** - Comprehensive checks before PR creation
 - **Mobile-friendly** - Review and manage from anywhere
@@ -111,7 +111,7 @@ git checkout -b refactor/issue-23-simplify-repo
 
 - Follow the [ARCHITECTURE.md](./ARCHITECTURE.md) guidelines
 - Write tests for new functionality
-- Ensure 90%+ code coverage
+- Ensure 20%+ code coverage
 - Update documentation as needed
 - Use type-safe resources (SwiftGen's `Strings` and `Asset`)
 
@@ -207,7 +207,7 @@ Before creating a PR, run comprehensive quality checks:
 # - Build verification
 # - All tests pass
 # - Architecture compliance
-# - Code coverage >= 90%
+# - Code coverage >= 20%
 ```
 
 ### 5. Create Pull Request
@@ -256,7 +256,7 @@ GitHub Actions automatically runs optimized workflows:
 **Job 3 - Tests & Coverage** (depends on Job 2):
 - Download build artifacts (no rebuild!)
 - Run tests with coverage
-- Calculate coverage (90% minimum)
+- Calculate coverage (20% minimum)
 - Post combined comment with all results
 - **Skipped if build fails** (fail-fast)
 
@@ -341,7 +341,7 @@ All code must follow MVVM architecture with clear separation of concerns.
 
 ### Testing
 - ✅ Swift Testing framework (`@Test`)
-- ✅ 90%+ code coverage
+- ✅ 20%+ code coverage
 - ✅ Mock dependencies using protocols
 - ✅ Test both success and failure cases
 
@@ -362,7 +362,7 @@ For detailed architecture documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md
 - [ ] No force unwrapping (unless justified)
 - [ ] Strings localized using SwiftGen
 - [ ] Self-review completed
-- [ ] Coverage >= 90%
+- [ ] Coverage >= 20%
 
 ## PR Description
 
@@ -518,7 +518,7 @@ Checks:
 - Build verification
 - All tests pass
 - Architecture compliance
-- Code coverage >= 90%
+- Code coverage >= 20%
 
 **Verify setup:**
 ```bash

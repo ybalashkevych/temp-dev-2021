@@ -1,7 +1,7 @@
 # LiveAssistant
 
 [![CI](https://github.com/your-username/LiveAssistant/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/LiveAssistant/actions/workflows/ci.yml)
-[![Code Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)]()
+[![Code Coverage](https://img.shields.io/badge/coverage-20%25-yellow)]()
 [![macOS](https://img.shields.io/badge/macOS-15.0+-blue)]()
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange)]()
 [![Xcode](https://img.shields.io/badge/Xcode-16.0+-blue)]()
@@ -41,7 +41,7 @@ This project uses a fully automated development workflow with:
 
 - ✅ **Issue-driven development** - All work starts from GitHub Issues
 - ✅ **Automated CI/CD** - GitHub Actions for quality checks
-- ✅ **Code coverage tracking** - Minimum 90% coverage enforced
+- ✅ **Code coverage tracking** - Minimum 20% coverage enforced
 - ✅ **Conventional commits** - Consistent PR formatting
 - ✅ **Self-review process** - Comprehensive pre-PR checks
 - ✅ **Mobile-friendly** - Review and approve from anywhere

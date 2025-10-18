@@ -159,7 +159,7 @@ func testLoadMessages() async throws {
 - Test Repositories with mock Services
 - Use Swift Testing framework (`@Test`, `import Testing`)
 - Test both success and failure cases
-- Aim for 30%+ code coverage
+- Aim for 20%+ code coverage
 
 ### 4. Self-Review Checklist
 
@@ -320,7 +320,7 @@ GitHub Actions will automatically run:
 2. **SwiftLint** - Code style validation
 3. **swift-format** - Format validation
 4. **Tests** - All unit and integration tests
-5. **Coverage** - Must maintain 30%+ coverage
+5. **Coverage** - Must maintain 20%+ coverage
 
 All checks must pass before merge.
 
@@ -562,7 +562,7 @@ All PRs must pass:
 - ✅ SwiftLint validation (zero warnings)
 - ✅ swift-format validation
 - ✅ All unit tests pass
-- ✅ Code coverage ≥ 30%
+- ✅ Code coverage ≥ 20%
 - ✅ Architecture compliance
 - ✅ At least 1 approval from maintainer
 

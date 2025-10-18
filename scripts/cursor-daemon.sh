@@ -19,10 +19,7 @@ POLL_INTERVAL=60  # Check GitHub every 60 seconds
 LOG_DIR="logs"
 REPO_OWNER="ybalashkevych"
 REPO_NAME="temp-dev-2021"
-AUTO_RESPOND=false  # Interactive mode: respond to commands only
-INTERACTIVE_MODE=true  # Post analysis, wait for @ybalashkevych commands
-# Uses: cursor CLI to open feedback file for AI-assisted manual changes
-# Set to false if you want manual code changes only
+# Interactive mode: respond to @ybalashkevych commands only (analyze, implement, plan)
 
 # Colors for logging
 RED='\033[0;31m'
@@ -151,35 +148,20 @@ process_pr() {
     if ./scripts/cursor-pr.sh process "$pr_number" >> "$LOG_DIR/pr-${pr_number}.log" 2>&1; then
         log SUCCESS "Processed PR #${pr_number}"
         
-        # Check mode
-        if [ "$INTERACTIVE_MODE" = "true" ]; then
-            log INFO "INTERACTIVE_MODE enabled - posting analysis..."
+        # Interactive mode: post analysis and wait for commands
+        log INFO "Posting analysis and waiting for @ybalashkevych commands..."
+        
+        # Post analysis as @ybalashkevych
+        if ./scripts/cursor-respond-interactive.sh analyze "$pr_number" "${REPO_OWNER}/${REPO_NAME}" >> "$LOG_DIR/pr-${pr_number}-analysis.log" 2>&1; then
+            log SUCCESS "Posted analysis to PR #${pr_number}"
             
-            # Post analysis as @ybalashkevych
-            if ./scripts/cursor-respond-interactive.sh analyze "$pr_number" "${REPO_OWNER}/${REPO_NAME}" >> "$LOG_DIR/pr-${pr_number}-analysis.log" 2>&1; then
-                log SUCCESS "Posted analysis to PR #${pr_number}"
-                
-                # Add awaiting-response label (prevents re-analyzing)
-                gh pr edit "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-                    --add-label "awaiting-response" 2>/dev/null || true
-                    
-                log INFO "Waiting for '@ybalashkevych implement' or '@ybalashkevych plan' command"
-            else
-                log WARNING "Failed to post analysis"
-            fi
-            
-        elif [ "$AUTO_RESPOND" = "true" ]; then
-            log INFO "AUTO_RESPOND enabled - triggering automatic response..."
-            
-            if ./scripts/cursor-pr.sh respond --auto "$pr_number" "${REPO_OWNER}/${REPO_NAME}" >> "$LOG_DIR/pr-${pr_number}-auto-respond.log" 2>&1; then
-                log SUCCESS "Automatic response completed for PR #${pr_number}"
-            else
-                log WARNING "Automatic response failed for PR #${pr_number}"
-            fi
-        else
-            log INFO "Manual mode - feedback ready"
+            # Add awaiting-response label (prevents re-analyzing)
             gh pr edit "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-                --remove-label "needs-changes" 2>/dev/null || true
+                --add-label "awaiting-response" 2>/dev/null || true
+                
+            log INFO "Waiting for '@ybalashkevych implement' or '@ybalashkevych plan' command"
+        else
+            log WARNING "Failed to post analysis"
         fi
         
         return 0

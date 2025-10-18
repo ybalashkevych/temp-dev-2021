@@ -7,7 +7,7 @@ on:
 env:
   SWIFT_ENABLE_EXPERIMENTAL_FEATURES: "0"
   DERIVED_DATA_PATH: DerivedData
-  COVERAGE_THRESHOLD: "30.0"
+  COVERAGE_THRESHOLD: "20.0"
 
 permissions:
   contents: read

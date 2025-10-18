@@ -1105,7 +1105,7 @@ Before submitting code for review, ensure:
 - [ ] Public APIs are documented
 - [ ] Error handling is implemented
 - [ ] All strings are localized using SwiftGen
-- [ ] Tests are written and passing (90%+ coverage)
+- [ ] Tests are written and passing (20%+ coverage)
 - [ ] No force unwrapping (unless justified)
 - [ ] ViewModels use `@Observable` and `@MainActor`
 - [ ] Dependencies are injected via protocols
