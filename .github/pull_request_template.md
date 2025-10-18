@@ -1,100 +1,90 @@
-# Pull Request
-
 ## Description
 
-<!-- Provide a brief description of the changes in this PR -->
+<!-- Provide a brief overview of what this PR does and why -->
+
+## Changes
+
+<!-- List the specific changes made in this PR -->
+
+- 
+- 
+- 
 
 ## Type of Change
 
-<!-- Mark the relevant option with an "x" -->
+<!-- Mark the relevant option with an 'x' -->
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Refactoring (no functional changes, code improvements)
-- [ ] Documentation update
-- [ ] Configuration/tooling change
-
-## Related Issues
-
-<!-- Link to related issues: Fixes #123, Relates to #456 -->
-
-## Changes Made
-
-<!-- List the main changes made in this PR -->
-
--
--
--
-
-## Architecture Compliance
-
-<!-- Ensure the changes follow project architecture -->
-
-- [ ] Follows MVVM pattern (View → ViewModel → Repository → Service)
-- [ ] Uses `@Observable` and `@MainActor` for ViewModels
-- [ ] Dependencies injected via protocols
-- [ ] Repository pattern used for data access
-- [ ] No business logic in Views
-- [ ] Proper separation of concerns
-
-## Code Quality Checklist
-
-- [ ] SwiftLint passes without errors or warnings
-- [ ] SwiftFormat applied (code is properly formatted)
-- [ ] All files have correct copyright headers
-- [ ] Code follows naming conventions (see CODING_STANDARDS.md)
-- [ ] No force unwrapping (unless explicitly justified)
-- [ ] Proper error handling with specific error types
-- [ ] All user-facing strings are localized
+- [ ] `feat`: New feature
+- [ ] `fix`: Bug fix
+- [ ] `refactor`: Code refactoring
+- [ ] `test`: Adding or updating tests
+- [ ] `docs`: Documentation changes
+- [ ] `chore`: Maintenance or tooling
+- [ ] `perf`: Performance improvement
+- [ ] `style`: Code style changes
 
 ## Testing
 
-- [ ] Unit tests added/updated for new functionality
-- [ ] All tests pass
-- [ ] Tests follow Swift Testing framework (`@Test` attribute)
-- [ ] Mock/fake implementations provided for dependencies
-- [ ] Edge cases covered
+<!-- Describe how this was tested -->
+
+- [ ] Unit tests added/updated
+- [ ] All tests pass locally
+- [ ] Manual testing performed
+- [ ] Code coverage maintained (≥90%)
+
+## Architecture Compliance
+
+<!-- Verify architecture requirements are met -->
+
+- [ ] ViewModels use `@Observable` and `@MainActor`
+- [ ] ViewModels access data through Repositories only
+- [ ] Protocol-based dependency injection used
+- [ ] Follows MVVM pattern per ARCHITECTURE.md
+- [ ] Business logic in Repositories, not Services
+
+## Code Quality
+
+<!-- Verify code quality standards are met -->
+
+- [ ] SwiftLint passes (strict mode, zero warnings)
+- [ ] swift-format validation passes
+- [ ] No force unwraps without justification
+- [ ] All user-facing strings use `Strings` enum (no hardcoded strings)
+- [ ] All assets use `Asset` enum (no hardcoded names)
+- [ ] Functions under 60 lines (warning threshold)
+- [ ] Type bodies under 300 lines (warning threshold)
 
 ## Documentation
 
-- [ ] Public APIs documented with doc comments
-- [ ] ARCHITECTURE.md updated (if architecture changed)
-- [ ] README.md updated (if setup/usage changed)
-- [ ] Inline comments added for complex logic
+<!-- Update relevant documentation -->
 
-## Performance & Security
+- [ ] Code comments added for complex logic
+- [ ] README.md updated (if needed)
+- [ ] ARCHITECTURE.md updated (if patterns changed)
+- [ ] Localizable.strings updated (if new strings added)
 
-- [ ] No performance regressions
-- [ ] Async/await used for asynchronous operations
-- [ ] Memory management considered (no retain cycles)
-- [ ] Sensitive data handled securely
-- [ ] API keys/secrets not hardcoded
+## Screenshots
 
-## Screenshots/Videos
+<!-- If this PR includes UI changes, add screenshots here -->
 
-<!-- If UI changes, add screenshots or videos demonstrating the changes -->
+<!-- Drag and drop images here -->
 
-## Reviewer Notes
+## Related Issues
 
-<!-- Any specific areas you'd like reviewers to focus on? -->
+<!-- Link related issues using keywords -->
 
-## Pre-merge Checklist
+Closes #
 
-- [ ] Branch is up to date with main
-- [ ] No merge conflicts
-- [ ] CI/CD pipeline passes (if applicable)
-- [ ] Reviewed own code changes
-- [ ] Ready for review
+## Additional Notes
+
+<!-- Any additional information, context, or discussion points -->
 
 ---
 
-**Reviewer Guidelines:**
-- Verify architecture compliance
-- Check test coverage
-- Ensure code quality standards are met
-- Look for potential bugs or edge cases
-- Validate error handling
-- Consider performance implications
+**Checklist for Reviewer:**
 
-
+- [ ] Code follows project architecture and standards
+- [ ] Tests are comprehensive and pass
+- [ ] Documentation is adequate
+- [ ] No obvious performance or security issues
+- [ ] Changes are backwards compatible (or migration path provided)

@@ -1,0 +1,177 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Validation"]
+    types:
+      - completed
+    branches:
+      - '**'
+
+jobs:
+  build:
+    name: Build
+    runs-on: macos-26
+    timeout-minutes: 30
+    # Only run if: push to main OR PR checks workflow succeeded
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    
+    env:
+      SWIFT_ENABLE_EXPERIMENTAL_FEATURES: "0"
+      DERIVED_DATA_PATH: DerivedData
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Cache Build Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/Package.resolved') }}-${{ hashFiles('**/*.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-${{ hashFiles('**/Package.resolved') }}-
+            ${{ runner.os }}-xcode-
+
+      - name: Clean stale build artifacts
+        run: |
+          echo "Cleaning DerivedData to remove stale SwiftLint artifacts..."
+          rm -rf DerivedData
+          
+      - name: Resolve SPM dependencies
+        run: xcodebuild -resolvePackageDependencies -scheme LiveAssistant -skipPackagePluginValidation -skipMacroValidation
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -scheme LiveAssistant \
+            -destination 'platform=macOS,arch=arm64' \
+            -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA_PATH" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: DerivedData
+          retention-days: 1
+
+  test-and-coverage:
+    name: Tests & Coverage
+    runs-on: macos-26
+    needs: build
+    timeout-minutes: 30
+    
+    env:
+      SWIFT_ENABLE_EXPERIMENTAL_FEATURES: "0"
+      DERIVED_DATA_PATH: DerivedData
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: DerivedData
+
+      - name: Run tests with coverage
+        run: |
+          xcodebuild test \
+            -scheme LiveAssistant \
+            -destination 'platform=macOS,arch=arm64' \
+            -testPlan LiveAssistant \
+            -enableCodeCoverage YES \
+            -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA_PATH" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_ALLOWED=YES \
+            -resultBundlePath TestResults.xcresult
+
+      - name: Generate coverage report
+        run: |
+          xcrun xccov view --report --json TestResults.xcresult > coverage.json
+          
+          # Parse coverage and display summary
+          python3 << 'EOF'
+          import json
+          
+          with open('coverage.json', 'r') as f:
+              coverage_data = json.load(f)
+          
+          total_lines = 0
+          covered_lines = 0
+          excluded_patterns = [
+              'Views/',
+              'View.swift',
+              'Tests/',
+              'Generated/',
+              'UITests/',
+              '.xctest'
+          ]
+          
+          def should_exclude(filepath):
+              return any(pattern in filepath for pattern in excluded_patterns)
+          
+          def process_target(target):
+              global total_lines, covered_lines
+              
+              for file_data in target.get('files', []):
+                  filepath = file_data.get('path', '')
+                  
+                  if should_exclude(filepath):
+                      continue
+                  
+                  for function in file_data.get('functions', []):
+                      exec_count = function.get('executableLines', 0)
+                      exec_covered = function.get('coveredLines', 0)
+                      
+                      total_lines += exec_count
+                      covered_lines += exec_covered
+          
+          for target in coverage_data.get('targets', []):
+              process_target(target)
+          
+          if total_lines > 0:
+              coverage_pct = (covered_lines / total_lines) * 100
+          else:
+              coverage_pct = 0.0
+          
+          print(f"\n📊 Coverage Report")
+          print(f"==================")
+          print(f"Total executable lines: {total_lines}")
+          print(f"Covered lines: {covered_lines}")
+          print(f"Coverage: {coverage_pct:.2f}%")
+          print(f"Excluded: SwiftUI Views, Tests, Generated files\n")
+          EOF
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-and-coverage-results
+          path: |
+            TestResults.xcresult
+            coverage.json
+          retention-days: 7
+
+      - name: Check for test failures
+        if: failure()
+        run: |
+          echo "❌ Tests failed. Check the test results artifact for details."
+          exit 1

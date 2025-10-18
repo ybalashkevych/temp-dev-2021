@@ -7,7 +7,8 @@
 
 import XCTest
 
-final class LiveAssistantUITestsLaunchTests: XCTestCase {
+class LiveAssistantUITestsLaunchTests: XCTestCase {
+    // swiftlint:disable:next superfluous_disable_command
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
     }

@@ -98,15 +98,15 @@ Posts SwiftLint violations as inline PR comments.
 
 ### 6. Cursor Automation Rules
 
-**File:** `.ai/rules/pr-monitoring.mdc`
+**File:** `.cursor/rules/workflow-automation.mdc` (previously `pr-monitoring.mdc`)
 
-Defines how Cursor should behave when processing PR feedback.
+Defines how Cursor should behave when processing PR feedback and automating development workflow.
 
 **What it defines:**
 - How to read and prioritize feedback
 - Architecture compliance requirements
 - Self-review process
-- Response templates
+- Automated workflow guidance
 - Error handling procedures
 
 ## Installation
@@ -149,21 +149,39 @@ cp scripts/com.liveassistant.cursor-monitor.plist.template \
    ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
 
 # Edit to match your actual project path
-# Replace /Users/yurii/Desktop/Projects/LiveAssistant with your path
+# Replace YOUR_USERNAME with your macOS username
+# The default path structure is: /Users/YOUR_USERNAME/Desktop/Projects/LiveAssistant
+# NOTE: Avoid using /Documents/, /Desktop/, or /Downloads/ folders as they are
+#       restricted by macOS security and launchd cannot access them without Full Disk Access
 nano ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
 ```
 
 ### Step 5: Load and Start the Daemon
 
-```bash
-# Load the launch agent
-launchctl load ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
+Use the modern `launchctl bootstrap` command (not the deprecated `load`):
 
-# Start the daemon
-launchctl start com.liveassistant.cursor-monitor
+```bash
+# Bootstrap the launch agent (loads and starts it)
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
 
 # Verify it's running
 launchctl list | grep cursor-monitor
+
+# You should see output like: -    78    com.liveassistant.cursor-monitor
+# The number is the process ID, indicating it's running
+```
+
+**Troubleshooting:**
+
+If you get "Input/output error", verify your paths:
+```bash
+# Check the plist file has correct paths
+cat ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist | grep "/Users/"
+
+# All paths should match your actual project location
+# Correct: /Users/yourusername/Desktop/Projects/LiveAssistant
+# Wrong: /Users/YOUR_USERNAME/Desktop/Projects/LiveAssistant (template not updated)
+# AVOID: /Users/yourusername/Documents/LiveAssistant (macOS protected folder)
 ```
 
 ### Step 6: Verify Installation
@@ -225,13 +243,12 @@ Since all scripts are in the repository and version controlled:
 4. **Restart daemon** to pick up changes:
 
 ```bash
-# Restart the daemon
-launchctl stop com.liveassistant.cursor-monitor
-launchctl start com.liveassistant.cursor-monitor
+# Restart the daemon (stop and start)
+launchctl kickstart -k gui/$(id -u)/com.liveassistant.cursor-monitor
 
-# Or reload completely
-launchctl unload ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
-launchctl load ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
+# Or reload completely (unload and reload)
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
 ```
 
 ### Testing Script Changes
@@ -369,8 +386,8 @@ gh api rate_limit
 Prevent logs from growing too large:
 
 ```bash
-# Add to crontab
-0 0 * * 0 /usr/bin/find /Users/yurii/Desktop/Projects/LiveAssistant/logs -name "*.log" -mtime +30 -delete
+# Add to crontab (replace with your actual project path)
+0 0 * * 0 /usr/bin/find /Users/yourusername/Desktop/Projects/LiveAssistant/logs -name "*.log" -mtime +30 -delete
 ```
 
 ## Security Considerations
@@ -433,8 +450,7 @@ To remove the background automation:
 
 ```bash
 # Stop and unload daemon
-launchctl stop com.liveassistant.cursor-monitor
-launchctl unload ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
 
 # Remove launch agent
 rm ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist
@@ -460,7 +476,7 @@ A: Minimal when idle. Only active when processing PRs. Typically <10MB RAM, negl
 A: Yes, but coordinate to avoid processing the same PR simultaneously. Use different labels or assign PRs.
 
 **Q: What if I want to pause automation temporarily?**  
-A: `launchctl stop com.liveassistant.cursor-monitor` - restart with `start`
+A: `launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist` - restart with `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.liveassistant.cursor-monitor.plist`
 
 **Q: Can Cursor automatically make changes without human review?**  
 A: Currently, Cursor prepares feedback but requires human interaction to make changes. Full automation possible with additional integration.
@@ -480,6 +496,100 @@ For issues or questions:
 - PR comment monitoring workflow
 - Inline comment posting
 - Comprehensive documentation
+
+## CI Check Integration
+
+The daemon automatically fetches results from GitHub Actions CI checks and includes them in the feedback file.
+
+### Optimized Workflow Architecture
+
+The CI checks use an **optimized multi-job workflow** that eliminates redundant builds:
+
+**PR Checks Workflow:**
+1. **Job 1 (Code Quality)**: SwiftLint + swift-format run in parallel
+2. **Job 2 (Build)**: Builds once, uploads artifacts *(skipped if Job 1 fails)*
+3. **Job 3 (Tests & Coverage)**: Downloads artifacts, tests with coverage *(skipped if Job 2 fails)*
+
+**Benefits:**
+- ~66% reduction in build time (1 build instead of 3)
+- Fail-fast: dependent jobs skip automatically on failure
+- Single combined PR comment with all results
+- Build artifacts cached between workflow runs
+
+### Supported Checks
+
+1. **SwiftLint** - Code style violations with line numbers
+2. **swift-format** - Code formatting issues
+3. **Build Status** - Compilation errors
+4. **Unit Tests** - Test failures with error messages  
+5. **Code Coverage** - Coverage percentage and threshold status (90% minimum)
+
+### How It Works
+
+1. Daemon fetches latest commit SHA from PR branch
+2. Queries GitHub API for check runs on that commit
+3. Parses results from each check (SwiftLint, swift-format, Build, Tests, Coverage)
+4. Extracts detailed output (violations, failures, errors)
+5. Includes in `.cursor-feedback.txt` with priority ordering
+
+### Feedback Priority
+
+The feedback file prioritizes issues:
+1. **Build errors** (blocks everything)
+2. **Test failures** (code quality)
+3. **SwiftLint violations** (style)
+4. **Coverage below 90%** (completeness)
+5. **Human review comments** (feature correctness)
+
+This ensures Cursor addresses blocking issues first.
+
+### Example Feedback Output
+
+When CI checks fail, the feedback file includes:
+
+```markdown
+## CI Check Results
+
+### Automated Checks Status
+
+| Check | Status |
+|-------|--------|
+| SwiftLint | ❌ failure |
+| Build | ✅ Passed |
+| Tests | ❌ failure |
+| Coverage | ❌ Below 90% |
+
+### SwiftLint Violations
+
+```
+Linting 'ContentViewModel.swift' (1/10)
+LiveAssistant/Features/Chat/ViewModels/ContentViewModel.swift:15:1: warning: Line Length Violation: Line should be 140 characters or less: currently 157 characters (line_length)
+```
+
+**Action Required:** Fix these linting violations before proceeding.
+
+### Test Failures
+
+```
+Test Case '-[LiveAssistantTests.TranscriptionViewModelTests testStartTranscription]' failed (0.023 seconds).
+    <unknown>:0: error: -[LiveAssistantTests.TranscriptionViewModelTests testStartTranscription] : XCTAssertEqual failed: ("started") is not equal to ("stopped")
+```
+
+**Action Required:** Fix failing tests.
+
+## Action Items
+
+### Priority 1: CI Failures
+- [ ] Fix failing tests
+- [ ] Fix SwiftLint violations
+- [ ] Increase test coverage to ≥90%
+
+### Priority 2: Code Review Feedback
+1. **Address each review comment** - Make the requested changes
+...
+```
+
+This prioritized structure helps Cursor know what to fix first.
 
 ---
 

@@ -1,0 +1,186 @@
+# Documentation Management Rules
+
+## CRITICAL RULE: ASK BEFORE CREATING
+
+**ALWAYS ask the user before creating ANY new .md file.**
+
+Even if documentation seems necessary, you MUST:
+1. Propose the documentation need
+2. Suggest where it should go (existing file vs new file)
+3. Wait for user approval
+4. Only then create the file
+
+NO EXCEPTIONS.
+
+---
+
+## Core Principle: Minimize Documentation Proliferation
+
+**DO NOT create new markdown (.md) files without a compelling reason.**
+
+The project should maintain a clean, organized documentation structure with minimal overhead. Creating new documentation files should be a last resort.
+
+## Guidelines for Documentation Changes
+
+### When Documentation is Needed
+
+**FIRST: Check if existing documentation can be updated**
+
+1. **Search existing .md files** for related content
+2. **Add a new section** to an existing file if the topic is related
+3. **Expand existing sections** rather than creating separate files
+4. **Only create new files** when the content:
+   - Is completely distinct from all existing documentation
+   - Would make existing files too large (>500 lines) or unfocused
+   - Serves a fundamentally different purpose than existing docs
+
+### Root Documentation Structure
+
+**Keep minimal files in project root:**
+
+Current structure (maintain this):
+- `README.md` - Main entry point and project overview
+- `ARCHITECTURE.md` - Architecture patterns and coding standards
+- `CONTRIBUTING.md` - Contributing guidelines and development workflow
+- `CHANGELOG.md` - Version history
+
+**DO NOT create additional root-level .md files unless absolutely necessary.**
+
+### Where to Add Documentation
+
+**Before creating a new file, try these locations:**
+
+1. **Existing root documents:**
+   - Technical content → `ARCHITECTURE.md`
+   - Process/workflow → `CONTRIBUTING.md`
+   - Project overview → `README.md`
+   - Changes → `CHANGELOG.md`
+
+2. **`docs/` subdirectories:**
+   - Setup guides → `docs/setup/`
+   - Implementation details → `docs/implementation/`
+   - Troubleshooting → `docs/troubleshooting/`
+
+3. **Inline documentation:**
+   - Code comments
+   - README in specific feature directories
+   - DocC documentation comments
+
+### Temporary Documentation
+
+**Status/debug/fix documents should be temporary:**
+
+- ❌ DO NOT commit files like:
+  - `DEBUG_SOMETHING.md`
+  - `FIX_ISSUE.md`
+  - `STATUS_UPDATE.md`
+  - `INVESTIGATION_NOTES.md`
+
+- ✅ INSTEAD:
+  - Add to `CHANGELOG.md` if it's a change
+  - Add to issue/PR description if it's investigation
+  - Add to `docs/troubleshooting/` if it's a fix that others might need
+  - Delete after the issue is resolved
+
+### Creating New Documentation
+
+**If you must create a new .md file:**
+
+1. **Justify the need** - Why can't this go in existing docs?
+2. **Choose the right location:**
+   - Root only for critical, frequently accessed docs
+   - `docs/` subdirectories for everything else
+3. **Use descriptive names** - `authentication-flow.md` not `auth.md`
+4. **Update the main README** - Add links to new documentation
+5. **Consider consolidation** - Can other docs be merged at the same time?
+
+## Examples
+
+### ❌ Bad: Creating New Root Files
+
+```
+DEBUG_PERMISSIONS.md          → Should be in troubleshooting or deleted
+LAUNCH_CRASH_FIX.md          → Should be in CHANGELOG or deleted
+IMPLEMENTATION_COMPLETE.md    → Should be in PR description or deleted
+MICROPHONE_ENTITLEMENT_FIX.md → Should be in troubleshooting or deleted
+```
+
+### ✅ Good: Using Existing Structure
+
+```
+Authentication docs     → Add to ARCHITECTURE.md (technical)
+Setup instructions      → Add to docs/setup/SETUP.md
+Workflow changes        → Add to CONTRIBUTING.md
+Bug fix notes          → Add to CHANGELOG.md + PR description
+```
+
+## Consolidation Mindset
+
+**When you see multiple related .md files:**
+
+1. **Consider consolidation** - Can they be merged?
+2. **Look for patterns** - Are there common themes?
+3. **Propose cleanup** - Suggest merging to reduce overhead
+4. **Update references** - Fix all links after consolidation
+
+## Recent Consolidation (Reference)
+
+The project recently underwent extreme consolidation:
+- Root docs: 6 → 4 files (33% reduction)
+- Overall: 36+ files → 11 files (69% reduction)
+
+**Maintain this clean state. Do not revert to proliferation.**
+
+## Decision Tree
+
+```
+Need to document something?
+  ├─ Is it code-specific?
+  │  └─ YES → Use inline comments / DocC
+  │
+  ├─ Is it temporary/debug?
+  │  └─ YES → Use PR description or delete after resolved
+  │
+  ├─ Does existing doc cover this topic?
+  │  └─ YES → Update existing doc
+  │
+  ├─ Is it a change/fix?
+  │  └─ YES → Add to CHANGELOG.md
+  │
+  ├─ Is it architecture/technical?
+  │  └─ YES → Add to ARCHITECTURE.md
+  │
+  ├─ Is it process/workflow?
+  │  └─ YES → Add to CONTRIBUTING.md
+  │
+  ├─ Is it setup/configuration?
+  │  └─ YES → Add to docs/setup/SETUP.md
+  │
+  └─ Still need new file?
+     ├─ Create in docs/ subdirectory
+     ├─ Update README with link
+     └─ Justify in commit message
+```
+
+## Enforcement
+
+**During code review, check:**
+
+- ❌ Are new .md files necessary?
+- ❌ Could content go in existing files?
+- ❌ Are there temporary debug files?
+- ✅ Is documentation properly consolidated?
+- ✅ Are references updated?
+
+## Summary
+
+**Remember: Every new .md file is overhead.**
+
+- Default to updating existing documentation
+- Keep root directory clean (4 essential files)
+- Use `docs/` subdirectories for detailed content
+- Delete temporary documentation
+- Consolidate when possible
+- Justify any new files
+
+**If in doubt, update existing docs rather than creating new ones.**

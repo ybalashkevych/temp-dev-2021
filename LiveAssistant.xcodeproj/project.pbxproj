@@ -117,7 +117,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				5A07D3082E9C3A6100C66231 /* PBXTargetDependency */,
+				5A6A87A42EA3B3BE0032D3D6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				5A07D1AD2E9BC4DA00C66231 /* LiveAssistant */,
@@ -135,6 +135,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5A07D1D12E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistantTests" */;
 			buildPhases = (
+				5ACA92C52EA1B6DB001A9AB0 /* SwiftFormat */,
 				5A07D1B62E9BC4DC00C66231 /* Sources */,
 				5A07D1B72E9BC4DC00C66231 /* Frameworks */,
 				5A07D1B82E9BC4DC00C66231 /* Resources */,
@@ -142,6 +143,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				5A6A87A62EA3B3C30032D3D6 /* PBXTargetDependency */,
 				5A07D1BC2E9BC4DC00C66231 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
@@ -161,10 +163,12 @@
 				5A07D1C02E9BC4DC00C66231 /* Sources */,
 				5A07D1C12E9BC4DC00C66231 /* Frameworks */,
 				5A07D1C22E9BC4DC00C66231 /* Resources */,
+				5ACA92C62EA1B6F6001A9AB0 /* SwiftFormat */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5A6A87A82EA3B3C70032D3D6 /* PBXTargetDependency */,
 				5A07D1C62E9BC4DC00C66231 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
@@ -293,6 +297,44 @@
 			shellScript = "# SwiftGen - Generate type-safe resource accessors\nif command -v swift &> /dev/null; then\n    cd \"${SRCROOT}\"\n    swift package --allow-writing-to-package-directory generate-code-for-resources\n    echo \"✅ SwiftGen: Generated type-safe resource accessors\"\nelse\n    echo \"⚠️  SwiftGen: Swift command not found, skipping code generation\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
+		5ACA92C52EA1B6DB001A9AB0 /* SwiftFormat */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftFormat;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n    # Auto-fix formatting issues (exclude SwiftGen generated files)\n    find \"${SRCROOT}/LiveAssistant\" -name \"*.swift\" -not -path \"*/Generated/*\" -print0 | xargs -0 xcrun swift-format format --in-place 2>&1\n    echo \"✅ swift-format auto-fixed all files\"\nfi\n";
+		};
+		5ACA92C62EA1B6F6001A9AB0 /* SwiftFormat */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftFormat;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n    # Auto-fix formatting issues (exclude SwiftGen generated files)\n    find \"${SRCROOT}/LiveAssistant\" -name \"*.swift\" -not -path \"*/Generated/*\" -print0 | xargs -0 xcrun swift-format format --in-place 2>&1\n    echo \"✅ swift-format auto-fixed all files\"\nfi\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -330,9 +372,17 @@
 			target = 5A07D1AA2E9BC4DA00C66231 /* LiveAssistant */;
 			targetProxy = 5A07D1C52E9BC4DC00C66231 /* PBXContainerItemProxy */;
 		};
-		5A07D3082E9C3A6100C66231 /* PBXTargetDependency */ = {
+		5A6A87A42EA3B3BE0032D3D6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = 5A07D3072E9C3A6100C66231 /* SwiftLintBuildToolPlugin */;
+			productRef = 5A6A87A32EA3B3BE0032D3D6 /* SwiftLintBuildToolPlugin */;
+		};
+		5A6A87A62EA3B3C30032D3D6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 5A6A87A52EA3B3C30032D3D6 /* SwiftLintBuildToolPlugin */;
+		};
+		5A6A87A82EA3B3C70032D3D6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 5A6A87A72EA3B3C70032D3D6 /* SwiftLintBuildToolPlugin */;
 		};
 /* End PBXTargetDependency section */
 
@@ -678,7 +728,17 @@
 			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
 			productName = SwiftLintFramework;
 		};
-		5A07D3072E9C3A6100C66231 /* SwiftLintBuildToolPlugin */ = {
+		5A6A87A32EA3B3BE0032D3D6 /* SwiftLintBuildToolPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
+			productName = "plugin:SwiftLintBuildToolPlugin";
+		};
+		5A6A87A52EA3B3C30032D3D6 /* SwiftLintBuildToolPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
+			productName = "plugin:SwiftLintBuildToolPlugin";
+		};
+		5A6A87A72EA3B3C70032D3D6 /* SwiftLintBuildToolPlugin */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
 			productName = "plugin:SwiftLintBuildToolPlugin";

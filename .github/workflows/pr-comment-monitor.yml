@@ -16,7 +16,7 @@ permissions:
 jobs:
   notify-cursor:
     name: Notify Cursor Daemon
-    if: github.event.issue.pull_request || github.event.pull_request
+    if: false  # Disabled - daemon auto-detects unresolved comments
     runs-on: ubuntu-latest
     
     steps:
@@ -31,7 +31,9 @@ jobs:
       
       - name: Add needs-changes label
         run: |
-          gh pr edit "${{ steps.pr.outputs.number }}" --add-label "needs-changes"
+          gh pr edit "${{ steps.pr.outputs.number }}" \
+            --repo "${{ github.repository }}" \
+            --add-label "needs-changes"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       

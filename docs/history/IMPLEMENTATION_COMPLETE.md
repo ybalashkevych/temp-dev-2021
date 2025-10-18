@@ -121,8 +121,8 @@ All planned architecture, quality tools, and documentation have been successfull
 LiveAssistant/
 ├── .github/
 │   └── pull_request_template.md
-├── .ai/
-│   └── instructions.md (existing)
+├── .cursor/
+│   └── rules/ (project rules)
 ├── scripts/
 │   ├── setup-git-hooks.sh
 │   └── verify-setup.sh

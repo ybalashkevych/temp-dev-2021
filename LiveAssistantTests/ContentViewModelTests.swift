@@ -7,9 +7,10 @@
 //
 
 import Foundation
-@testable import LiveAssistant
 import SwiftData
 import Testing
+
+@testable import LiveAssistant
 
 /// Tests for ContentViewModel demonstrating Swift Testing framework usage.
 ///
@@ -72,7 +73,7 @@ struct ContentViewModelTests {
 
         // Assert
         #expect(mockRepository.addItemCallCount == 1)
-        #expect(mockRepository.fetchItemsCallCount == 1) // Called to reload after add
+        #expect(mockRepository.fetchItemsCallCount == 1)  // Called to reload after add
     }
 
     @Test
@@ -108,7 +109,7 @@ struct ContentViewModelTests {
 
         // Assert
         #expect(mockRepository.deleteItemsCallCount == 1)
-        #expect(mockRepository.fetchItemsCallCount == 2) // Initial load + reload after delete
+        #expect(mockRepository.fetchItemsCallCount == 2)  // Initial load + reload after delete
     }
 }
 

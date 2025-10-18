@@ -8,7 +8,7 @@
     <key>ProgramArguments</key>
     <array>
         <!-- CHANGE THIS: Update to your actual project path -->
-        <string>/Users/yurii/Desktop/Projects/LiveAssistant/scripts/cursor-daemon.sh</string>
+        <string>/Users/YOUR_USERNAME/Desktop/Projects/LiveAssistant/scripts/cursor-daemon.sh</string>
     </array>
     
     <key>RunAtLoad</key>
@@ -19,15 +19,15 @@
     
     <key>StandardOutPath</key>
     <!-- CHANGE THIS: Update to your actual project path -->
-    <string>/Users/yurii/Desktop/Projects/LiveAssistant/logs/cursor-daemon.log</string>
+    <string>/Users/YOUR_USERNAME/Desktop/Projects/LiveAssistant/logs/cursor-daemon.log</string>
     
     <key>StandardErrorPath</key>
     <!-- CHANGE THIS: Update to your actual project path -->
-    <string>/Users/yurii/Desktop/Projects/LiveAssistant/logs/cursor-daemon.error.log</string>
+    <string>/Users/YOUR_USERNAME/Desktop/Projects/LiveAssistant/logs/cursor-daemon.error.log</string>
     
     <key>WorkingDirectory</key>
     <!-- CHANGE THIS: Update to your actual project path -->
-    <string>/Users/yurii/Desktop/Projects/LiveAssistant</string>
+    <string>/Users/YOUR_USERNAME/Desktop/Projects/LiveAssistant</string>
     
     <key>EnvironmentVariables</key>
     <dict>

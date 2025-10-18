@@ -222,7 +222,7 @@ swift package --allow-writing-to-package-directory generate-code-for-resources
 Run the setup verification script to check SwiftGen:
 
 ```bash
-./scripts/verify-setup.sh
+./scripts/cursor-quality.sh verify
 ```
 
 This will verify:

@@ -2,7 +2,7 @@
   "ai": {
     "docs": {
       "include": [
-        ".ai/docs/**/*.mdc"
+        ".cursor/docs/**/*.mdc"
       ]
     }
   }
