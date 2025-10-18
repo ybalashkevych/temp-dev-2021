@@ -1,0 +1,502 @@
+# Automated Development Workflow for Cursor AI
+
+> **Note:** This document extends [WORKFLOW.md](../../../WORKFLOW.md) with automation-specific details for Cursor AI. For general development workflow that applies to all developers, see WORKFLOW.md first.
+
+## Overview
+
+This document defines how Cursor AI should operate as an autonomous development agent, handling the complete development lifecycle from issue assignment to PR merge. It builds on the human workflow defined in WORKFLOW.md with AI-specific automation details.
+
+## Key Differences from Human Workflow
+
+While humans follow WORKFLOW.md manually, Cursor AI should:
+
+- **Automate repetitive tasks** - Run quality checks, format code, generate boilerplate
+- **Proactively verify compliance** - Check architecture patterns before committing
+- **Provide detailed context** - Explain decisions and reasoning in commits/PRs
+- **Handle edge cases systematically** - Follow decision trees for ambiguous situations
+- **Self-review rigorously** - Multiple passes before creating PRs
+
+## Development Workflow (AI-Enhanced)
+
+### 1. Issue Assignment & Analysis
+
+When assigned an issue:
+
+**Read and understand comprehensively:**
+1. Read issue description and ALL comments
+2. Check acceptance criteria and success metrics
+3. Identify linked issues, dependencies, or blockers
+4. Review related PRs and recent changes in affected areas
+
+**Analyze the codebase systematically:**
+1. Use codebase search to locate relevant files
+2. Read current implementations and tests
+3. Understand existing architecture patterns in the area
+4. Identify similar implementations for consistency
+
+**Plan implementation strategically:**
+1. Break down into logical, testable steps
+2. List all files to modify/create
+3. Plan test coverage strategy (what to test, what mocks needed)
+4. Estimate scope and flag if clarification needed
+
+### 2. Branch Creation
+
+```bash
+# Create and switch to feature branch
+git checkout main
+git pull origin main
+git checkout -b <type>/issue-<number>-<description>
+```
+
+Branch naming follows WORKFLOW.md conventions. Always include issue number.
+
+### 3. Implementation with Architecture Enforcement
+
+**CRITICAL: Follow these rules strictly (see ARCHITECTURE.md for details)**
+
+✅ **ViewModels:**
+- Use `@Observable` and `@MainActor` macros
+- Access data through Repositories ONLY (never Services directly)
+- Keep state properties as `private(set)`
+- Use `vm` for all ViewModel variable names
+- Inject dependencies via protocol-based initializers
+
+✅ **Repositories:**
+- Define protocol-based interfaces
+- Business logic lives HERE (not in Services or ViewModels)
+- Coordinate multiple Services if needed
+- Transform service data to domain models
+
+✅ **Services:**
+- Protocol-based interfaces for testability
+- Handle ONLY external interactions (API, SwiftData, system)
+- NO business logic
+- Never accessed directly from ViewModels
+
+✅ **Code Quality (Enforced):**
+- All strings use SwiftGen's `Strings` enum (never hardcode)
+- All assets use SwiftGen's `Asset` enum (never hardcode)
+- No force unwraps without explicit justification comment
+- Functions under 60 lines (warning) / 100 lines (error)
+- Type bodies under 300 lines (warning) / 400 lines (error)
+- Use async/await for asynchronous operations
+- Handle errors with specific types conforming to `LocalizedError`
+
+✅ **Testing (Required):**
+- Use Swift Testing framework (`@Test`, `import Testing`)
+- Test ViewModels with mock Repositories
+- Test Repositories with mock Services
+- Test both success AND failure cases
+- Maintain 30%+ code coverage
+- Create mock implementations for new protocols
+
+**Localization Process:**
+1. Add user-facing strings to `LiveAssistant/Resources/Localizable.strings`
+2. Use descriptive keys: `"Feature.Context.specificMessage"`
+3. Note that SwiftGen generates `Strings.swift` automatically (don't edit manually)
+4. Reference strings as: `Strings.Feature.Context.specificMessage`
+
+### 4. Self-Review Process (AI-Enhanced)
+
+Before creating any PR, perform multiple verification passes:
+
+#### Pass 1: Architecture Compliance
+
+Verify systematically:
+- [ ] No ViewModels access Services directly (scan all ViewModel files)
+- [ ] All dependencies injected via protocol-based initializers
+- [ ] Business logic in Repositories, not Services or Views
+- [ ] Proper layer separation maintained
+- [ ] No layer boundary violations
+
+**How to verify:** Read each modified ViewModel/Repository/Service and trace dependencies.
+
+#### Pass 2: Code Quality
+
+Run and verify:
+```bash
+# SwiftLint must pass with zero warnings
+swiftlint
+
+# Auto-fix what's possible first
+swiftlint --fix
+
+# swift-format validation
+xcrun swift-format lint --recursive LiveAssistant
+
+# Check for force unwraps
+grep -r "!" LiveAssistant --include="*.swift" | grep -v "!=" | grep -v "// swiftlint:disable:next force_unwrapping"
+```
+
+Verify:
+- [ ] SwiftLint passes with 0 warnings (strict mode)
+- [ ] swift-format validation passes
+- [ ] No unjustified force unwraps
+- [ ] No hardcoded strings (search for Text(" ), title: ", message: ")
+- [ ] No hardcoded colors/assets (search for .init(red:, UIColor., NSColor.)
+
+#### Pass 3: Testing
+
+Run complete test suite:
+```bash
+# Run all tests
+xcodebuild test -scheme LiveAssistant
+
+# Check for test coverage (if coverage tools available)
+# Verify new code has corresponding tests
+```
+
+Verify:
+- [ ] All tests pass locally
+- [ ] New ViewModels have test files
+- [ ] New Repository methods have tests
+- [ ] Both success and failure paths tested
+- [ ] Mock implementations created for new protocols
+
+#### Pass 4: Documentation
+
+Verify:
+- [ ] Complex logic has explanatory comments
+- [ ] Public interfaces have doc comments
+- [ ] README updated if user-facing changes
+- [ ] ARCHITECTURE.md updated if patterns changed
+
+### 5. Commit Strategy
+
+Use conventional commits with detailed messages:
+
+```bash
+git commit -m "feat: add dark mode support
+
+Implements dark mode throughout the app:
+- Created ThemeRepository to manage theme state
+- Updated all views to use semantic colors
+- Added user preference storage via SwiftData
+- Added comprehensive tests for theme switching
+
+Architecture:
+- ThemeService handles system theme observation
+- ThemeRepository contains business logic for theme selection
+- SettingsViewModel coordinates theme changes
+
+Closes #42"
+```
+
+**Commit message structure:**
+- **First line:** `<type>: <brief description>` (50 chars max)
+- **Body:** Detailed explanation of WHAT and WHY (wrap at 72 chars)
+- **Footer:** Issue references, breaking changes
+
+**When to commit:**
+- After completing each logical unit of work
+- Before switching focus to different part of implementation
+- After fixing review feedback (separate commit)
+
+### 6. PR Creation
+
+Create PR using GitHub CLI:
+
+```bash
+gh pr create \
+  --title "feat: add dark mode support" \
+  --body-file .github/pr-template.md \
+  --assignee @me
+```
+
+**PR Title Format (Conventional Commits):**
+```
+<type>: <description>
+```
+
+**PR Body Must Include:**
+```markdown
+## Description
+[Comprehensive overview of changes and reasoning]
+
+## Changes
+- [Detailed list of all modifications]
+- [Be specific about files and functionality]
+
+## Architecture Compliance
+- [Explain how changes follow MVVM pattern]
+- [Note any architectural decisions made]
+
+## Testing
+- [ ] Unit tests added for ViewModels
+- [ ] Unit tests added for Repositories
+- [ ] All tests pass locally
+- [ ] Manual testing performed
+
+## Related Issues
+Closes #<number>
+```
+
+**Before creating PR, verify:**
+1. All self-review checks passed
+2. Branch is pushed to remote
+3. PR title uses conventional commits format
+4. PR body is complete and detailed
+
+### 7. CI/CD Monitoring
+
+After PR creation, monitor GitHub Actions:
+
+1. **Build & Test** - Wait for completion, check logs if failures
+2. **SwiftLint** - Must show 0 warnings
+3. **Coverage** - Must maintain 30%+
+
+**If CI fails:**
+1. Read error logs completely
+2. Identify root cause
+3. Fix locally with same verification process
+4. Push fix: `git push origin <branch-name>`
+5. CI re-runs automatically
+
+**Common CI issues:**
+- SwiftLint violations: Run `swiftlint` locally first
+- Test failures: Ensure tests pass locally before pushing
+- Coverage drops: Add tests for new code paths
+
+### 8. Handling Review Feedback
+
+When review comments received:
+
+**Step 1: Understand all feedback**
+- Read EVERY comment and review carefully
+- Categorize by priority: Critical > High > Medium > Low
+  - **Critical:** Bugs, security, architecture violations
+  - **High:** Functionality changes, test requirements
+  - **Medium:** Code style, naming, documentation
+  - **Low:** Suggestions, optimizations
+
+**Step 2: Address systematically**
+For each feedback item:
+
+1. Locate the relevant code
+2. Make the requested change (following architecture rules)
+3. If feedback conflicts with architecture, prioritize architecture and explain
+4. Update related tests
+5. Run self-review checks
+6. Commit with descriptive message
+
+```bash
+git add .
+git commit -m "Address review feedback: improve error handling
+
+- Changed error handling to use specific error types
+- Added localized error messages
+- Updated tests to cover error scenarios"
+git push origin <branch-name>
+```
+
+**Step 3: Respond to comments**
+- Mark resolved comments as resolved in GitHub
+- Reply with explanation of what changed
+- Ask clarifying questions if anything unclear
+
+### 9. Merge Process
+
+Once approved:
+- Squash and merge via GitHub UI (preferred)
+- Or use: `gh pr merge --squash --delete-branch`
+- Verify linked issues are closed automatically
+
+## Automation-Specific Guidance
+
+### Decision Trees for Ambiguous Situations
+
+#### When Implementation Approach is Unclear
+
+1. **Check existing patterns** - Search codebase for similar functionality
+2. **Follow ARCHITECTURE.md** - Use prescribed patterns
+3. **Choose simpler approach** - Prefer clarity over cleverness
+4. **Document decision** - Explain in commit message or code comments
+
+#### When Tests are Difficult to Write
+
+1. **Question the design** - Hard to test often means poor separation
+2. **Refactor for testability** - Extract dependencies, use protocols
+3. **Create appropriate mocks** - Match interface of real implementations
+4. **Test behavior, not implementation** - Focus on outcomes
+
+#### When Review Feedback Conflicts with Architecture
+
+1. **Prioritize architecture compliance** - MVVM pattern is non-negotiable
+2. **Implement alternative solution** - Achieve goal in compliant way
+3. **Explain in response** - Note the conflict and your solution
+4. **Seek clarification** - Ask if alternative approach is acceptable
+
+### Proactive Quality Checks
+
+Beyond self-review checklist, verify:
+
+- **Consistency:** New code matches style of surrounding code
+- **Completeness:** All edge cases handled
+- **Performance:** No obvious performance issues introduced
+- **Accessibility:** UI changes consider accessibility (if applicable)
+- **Error handling:** All async operations have error handling
+- **Resource cleanup:** Proper deallocation, no retain cycles
+
+### AI-Specific Best Practices
+
+**DO ✅:**
+- Explain reasoning in commit messages and PR descriptions
+- Provide context for architectural decisions
+- Reference specific files and line numbers in discussions
+- Offer alternatives when trade-offs exist
+- Proactively flag potential issues or concerns
+- Use codebase search to ensure consistency with existing patterns
+
+**DON'T ❌:**
+- Make assumptions without verifying against codebase
+- Skip self-review to "move faster"
+- Create PRs before all checks pass locally
+- Implement quick fixes that violate architecture
+- Ignore subtle code smells or technical debt
+- Use placeholder implementations with TODOs
+
+## Advanced Scenarios
+
+### Working with Multiple Related Issues
+
+When changes span multiple issues:
+
+1. Create separate branches per issue
+2. Build on previous branches if dependencies exist
+3. Create PRs in dependency order
+4. Reference related PRs in descriptions
+
+### Refactoring Existing Code
+
+When improving existing code:
+
+1. Understand current implementation thoroughly
+2. Identify what needs improvement and why
+3. Plan refactoring steps to maintain functionality
+4. Update tests to reflect changes
+5. Verify all existing tests still pass
+6. Document what changed and why in PR
+
+### Adding New Architecture Patterns
+
+If implementing new patterns:
+
+1. Discuss in issue BEFORE implementing
+2. Ensure consistency with existing architecture
+3. Update ARCHITECTURE.md with the pattern
+4. Provide example implementation
+5. Update other code to follow pattern if appropriate
+
+## Troubleshooting (AI-Specific)
+
+### "Not sure which approach to take"
+
+1. Search codebase for similar implementations: `codebase_search`
+2. Review ARCHITECTURE.md for prescribed patterns
+3. Choose the approach most consistent with existing code
+4. Document decision in commit message
+
+### "Tests are flaky"
+
+1. Check for async issues (missing await, improper synchronization)
+2. Verify no shared state between tests
+3. Ensure mocks reset between tests
+4. Look for timing dependencies
+
+### "Can't reproduce CI failure locally"
+
+1. Verify exact Xcode/Swift versions match CI
+2. Check if CI has different environment variables
+3. Review CI logs for specific error details
+4. Try clean build: `rm -rf ~/Library/Developer/Xcode/DerivedData/*`
+
+## Quality Gates (Mandatory)
+
+All PRs must pass ALL gates:
+
+- ✅ SwiftLint strict validation (0 warnings)
+- ✅ swift-format validation passes
+- ✅ All unit tests pass
+- ✅ Code coverage ≥ 30%
+- ✅ Architecture compliance verified
+- ✅ No hardcoded strings or assets
+- ✅ At least 1 approval from maintainer
+
+**No exceptions.** If a gate fails, fix before requesting review.
+
+## Continuous Improvement
+
+After each PR, reflect:
+
+- What patterns worked well?
+- What caused confusion or rework?
+- What can be automated better?
+- What documentation needs updating?
+
+Update this document and ARCHITECTURE.md as patterns evolve.
+
+## References
+
+- **[WORKFLOW.md](../../../WORKFLOW.md)** - Human-readable workflow (READ THIS FIRST)
+- **[ARCHITECTURE.md](../../../ARCHITECTURE.md)** - Complete architecture documentation
+- **[CONTRIBUTING.md](../../../CONTRIBUTING.md)** - Contributing guidelines
+- **[.cursor/rules/architecture.mdc](architecture.mdc)** - Architecture rules
+- **[.cursor/rules/testing.mdc](testing.mdc)** - Testing patterns
+- **[.cursor/rules/file-content.mdc](file-content.mdc)** - File formatting rules
+
+## Cursor CLI Usage
+
+For detailed information on using the Cursor agent CLI in automation scripts, see:
+- **[.cursor/docs/cursor-cli-guide.mdc](../docs/cursor-cli-guide.mdc)** - Complete Cursor CLI usage patterns
+
+Key points for AI agents:
+- Always use `cursor agent --print --output-format text` for non-interactive scripts
+- Runs synchronously (blocks until complete)
+- Response file safe to read after script exits
+- Never use non-existent parameters like `--file`, `--context`, `--output`
+
+---
+
+**Remember:** As an AI agent, you have the advantage of perfect consistency and thorough verification. Use it to maintain the highest code quality standards.
+
+## Build and Test Commands
+
+When implementing changes, use these commands to verify your work:
+
+### Building
+```bash
+# Clean build
+xcodebuild clean build -scheme LiveAssistant
+
+# For faster iteration, just build without clean
+xcodebuild build -scheme LiveAssistant
+```
+
+### Testing
+```bash
+# Run all tests
+xcodebuild test -scheme LiveAssistant -testPlan LiveAssistant
+
+# Run specific test
+xcodebuild test -scheme LiveAssistant -only-testing:LiveAssistantTests/TestClassName/testMethodName
+```
+
+### Quality Checks
+```bash
+# swift-format validation
+xcrun swift-format lint --recursive LiveAssistant
+```
+
+### Iterative Development
+
+When build or test failures occur:
+
+1. Read error output completely and carefully
+2. Identify the specific error (syntax, type mismatch, test assertion failure, etc.)
+3. Understand WHY it failed - don't just fix symptoms
+4. Make targeted fixes
+5. Rebuild/retest
+6. Learn from each failure to avoid repeating mistakes
+
+If you see the same error multiple times, try a different approach - your strategy may be fundamentally flawed.

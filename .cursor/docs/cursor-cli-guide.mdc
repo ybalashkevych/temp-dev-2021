@@ -1,0 +1,223 @@
+# Cursor Agent CLI Usage Guide
+
+This guide explains how to properly use the cursor-agent CLI in your automation scripts.
+
+## Available Cursor Commands
+
+### 1. `cursor agent` - The Main Command
+
+```bash
+cursor agent [options] [prompt...]
+```
+
+**Key Options:**
+- `--print` - Print responses to console (for scripts/non-interactive use)
+- `--output-format <format>` - Output format: `text`, `json`, `stream-json`
+- `--stream-partial-output` - Stream partial output as individual text deltas
+- `--model <model>` - Model to use (e.g., `gpt-5`, `sonnet-4`)
+- `--force` - Force allow commands unless explicitly denied
+- `--browser` - Enable browser automation support
+
+### 2. Other Cursor Commands
+
+- `cursor --help` - General cursor help
+- `cursor --version` - Show version
+- `cursor <file>` - Open file in cursor
+- `cursor <directory>` - Open directory in cursor
+
+## Correct Usage Patterns
+
+### ✅ Method 1: Non-Interactive with Print Mode (Recommended)
+
+```bash
+# Read instructions from file and get response
+cursor agent --print --output-format text < instructions.md > response.txt
+
+# With error handling
+if cursor agent --print --output-format text < instructions.md > response.txt 2>&1; then
+    echo "Success: $(cat response.txt)"
+else
+    echo "Failed to get response"
+fi
+```
+
+### ✅ Method 2: Interactive Mode (Fallback)
+
+```bash
+# Open directory in cursor for manual processing
+cursor /path/to/work/directory
+
+# Or open specific file
+cursor /path/to/instructions.md
+```
+
+### ❌ What NOT to Use
+
+```bash
+# These commands don't exist:
+cursor composer <file>           # ❌ No such command
+cursor agent --file <file>       # ❌ No --file parameter
+cursor agent --context <file>    # ❌ No --context parameter
+cursor agent --output <file>     # ❌ No --output parameter
+```
+
+## Fixed Script Implementation
+
+Your `invoke-cursor-agent.sh` now uses the correct patterns:
+
+### Method 1: Print Mode (Primary)
+```bash
+cursor agent --print --output-format text < "$INSTRUCTIONS_FILE" > "$RESPONSE_FILE"
+```
+
+### Method 2: File Input (Fallback)
+```bash
+# Combine instructions and context
+cat instructions.md context.md > combined-prompt.md
+cursor agent --print --output-format text < combined-prompt.md > response.txt
+```
+
+### Method 3: Interactive (Last Resort)
+```bash
+# Open work directory in cursor
+cursor "$WORK_DIR"
+```
+
+## Best Practices
+
+### 1. Always Use Print Mode for Scripts
+```bash
+cursor agent --print --output-format text < input.md > output.txt
+```
+
+### 2. Handle Errors Properly
+```bash
+if cursor agent --print --output-format text < input.md > output.txt 2>&1; then
+    # Success - process output.txt
+    if [ -f "output.txt" ] && [ -s "output.txt" ]; then
+        echo "Got response: $(cat output.txt)"
+    fi
+else
+    # Failed - check logs or fallback
+    echo "Cursor agent failed"
+fi
+```
+
+### 3. Use Appropriate Working Directory
+```bash
+# Change to work directory before running
+cd "$WORK_DIR"
+cursor agent --print --output-format text < instructions.md > response.txt
+cd "$ORIGINAL_DIR"
+```
+
+### 4. Combine Multiple Input Files
+```bash
+# Create combined prompt
+{
+    echo "# Instructions"
+    cat instructions.md
+    echo ""
+    echo "---"
+    echo ""
+    echo "# Context"
+    cat context.md
+} > combined-prompt.md
+
+cursor agent --print --output-format text < combined-prompt.md > response.txt
+```
+
+## Testing Your Implementation
+
+Use the provided test script:
+
+```bash
+./scripts/automation/test-cursor-cli.sh
+```
+
+This will verify:
+- Cursor is available
+- Cursor agent command works
+- Print mode works correctly
+- File input works correctly
+
+## Common Issues and Solutions
+
+### Issue: "Command not found"
+**Solution:** Ensure cursor is in your PATH or use full path
+
+### Issue: Empty response file
+**Solution:** Check if cursor agent actually ran successfully and produced output
+
+### Issue: Interactive mode when you want non-interactive
+**Solution:** Always use `--print` flag for script usage
+
+### Issue: Permission denied
+**Solution:** Use `--force` flag if needed, or check file permissions
+
+## Example Integration
+
+Here's how your automation scripts now work:
+
+```bash
+# 1. Prepare work directory
+mkdir -p "$WORK_DIR"
+cp instructions.md "$WORK_DIR/"
+cp context.md "$WORK_DIR/"
+
+# 2. Invoke cursor agent
+cd "$WORK_DIR"
+if cursor agent --print --output-format text < instructions.md > response.txt 2>&1; then
+    # Success - process response
+    if [ -f "response.txt" ] && [ -s "response.txt" ]; then
+        echo "SUCCESS: $(cat response.txt)"
+    else
+        echo "FAILURE: Empty response"
+    fi
+else
+    # Fallback to interactive mode
+    echo "PENDING_MANUAL_INVOCATION"
+    cursor "$WORK_DIR" &
+fi
+```
+
+## Synchronous Execution
+
+**Important**: `cursor agent --print` runs **synchronously** - it blocks until completion.
+
+This means:
+- Response is fully written to file before script exits
+- No timing issues with file reads
+- Safe for daemon to read response file immediately after script completes
+- Exit code properly indicates success/failure
+
+## Response File Timing
+
+The daemon workflow:
+1. Daemon calls `invoke-cursor-agent.sh`
+2. Script runs cursor agent (blocks)
+3. Cursor writes complete response to file
+4. Script exits with status code
+5. Daemon immediately reads response file
+6. No race conditions ✅
+
+## Model Specification
+
+Specify model via environment variable:
+```bash
+export CURSOR_MODEL=claude-4.5-sonnet
+./scripts/daemon-control.sh start
+```
+
+Default model: `claude-4.5-sonnet`
+
+## Summary
+
+- ✅ Use `cursor agent --print --output-format text` for scripts
+- ✅ Runs synchronously (blocks until complete)
+- ✅ Response file safe to read after script exits
+- ✅ Always handle errors and check output files
+- ✅ Use appropriate working directories
+- ✅ Combine multiple input files when needed
+- ❌ Don't use `cursor composer` (doesn't exist)
+- ❌ Don't use non-existent parameters like `--file`, `--context`, `--output`

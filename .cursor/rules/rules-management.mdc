@@ -19,11 +19,13 @@ When updating project guidelines or standards:
 ## Current Rules Structure
 
 Existing rule files and their purposes:
-- `file-content.mdc` - Swift file formatting, copyright headers, file endings
-- `testing.mdc` - Testing frameworks, test structure, assertions
 - `architecture.mdc` - MVVM patterns, layer responsibilities, dependency injection
+- `documentation-management.mdc` - Guidelines for creating and managing documentation
+- `file-content.mdc` - Swift file formatting, copyright headers, file endings, code organization
 - `instructions.mdc` - General project overview and technology stack
 - `rules-management.mdc` - This file - managing the rules themselves
+- `testing.mdc` - Testing frameworks, test structure, assertions
+- `workflow-automation.mdc` - Automated workflow for Cursor AI (extends WORKFLOW.md)
 
 ## When Updating Rules
 
@@ -32,7 +34,9 @@ Existing rule files and their purposes:
 2. Does this fit into `testing.mdc` (testing practices)?
 3. Does this fit into `architecture.mdc` (MVVM, layers, DI patterns)?
 4. Does this fit into `instructions.mdc` (project overview/tech stack)?
-5. Is this truly a new category that warrants its own file?
+5. Does this fit into `workflow-automation.mdc` (AI workflow automation)?
+6. Does this fit into `documentation-management.mdc` (documentation guidelines)?
+7. Is this truly a new category that warrants its own file?
 
 **Prefer updates over creation:**
 - Add new sections to existing files

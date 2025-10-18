@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "cursor-automation"
+version = "1.0.0"
+description = "Automated Cursor AI assistant for GitHub PR feedback"
+authors = ["Yurii Balashkevych <yurii@example.com>"]
+readme = "README.md"
+packages = [{include = "cursor_automation", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+PyGithub = "^2.1.1"
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+click = "^8.1.7"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-mock = "^3.12.0"
+pytest-cov = "^4.1.0"
+black = "^23.12.0"
+mypy = "^1.7.0"
+ruff = "^0.1.7"
+types-requests = "^2.31.0"
+
+[tool.poetry.scripts]
+cursor-daemon = "cursor_automation.__main__:main"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --cov=cursor_automation --cov-report=term-missing"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+

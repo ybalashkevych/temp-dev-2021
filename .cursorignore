@@ -1,0 +1,61 @@
+# Prevent Cursor AI from reading secrets and sensitive data
+# This file tells Cursor what NOT to index or include in AI context
+
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+
+# Secrets directory
+secrets/
+
+# Authentication & Keys
+*.pem
+*.p12
+*.key
+*.keystore
+*.mobileprovision
+*.certSigningRequest
+*.token
+auth.json
+credentials.json
+
+# Logs that may contain sensitive data
+logs/
+*.log
+*.error.log
+
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Node modules (if used)
+node_modules/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# Coverage reports (may contain code paths)
+coverage/
+htmlcov/
+.coverage
+
+# Test data that might contain secrets
+test_data/
+fixtures/
+
+# macOS specific
+.AppleDouble
+.LSOverride
+._*
+
