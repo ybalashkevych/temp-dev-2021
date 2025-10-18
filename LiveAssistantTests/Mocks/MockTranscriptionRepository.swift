@@ -7,10 +7,11 @@
 //
 
 import Foundation
+
 @testable import LiveAssistant
 
 /// Mock implementation of TranscriptionRepositoryProtocol for testing.
-final class MockTranscriptionRepository: TranscriptionRepositoryProtocol {
+final class MockTranscriptionRepository: TranscriptionRepositoryProtocol, @unchecked Sendable {
     var startMicrophoneCallCount = 0
     var startSystemAudioCallCount = 0
     var stopAllCallCount = 0

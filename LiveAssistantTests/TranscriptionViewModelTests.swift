@@ -6,8 +6,9 @@
 //  Copyright © 2025. All rights reserved.
 //
 
-@testable import LiveAssistant
 import Testing
+
+@testable import LiveAssistant
 
 /// Tests for TranscriptionViewModel.
 @Suite

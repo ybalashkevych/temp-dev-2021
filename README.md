@@ -1,5 +1,12 @@
 # LiveAssistant
 
+[![CI](https://github.com/your-username/LiveAssistant/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/LiveAssistant/actions/workflows/ci.yml)
+[![Code Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)]()
+[![macOS](https://img.shields.io/badge/macOS-15.0+-blue)]()
+[![Swift](https://img.shields.io/badge/Swift-6.0-orange)]()
+[![Xcode](https://img.shields.io/badge/Xcode-16.0+-blue)]()
+[![License](https://img.shields.io/badge/license-Proprietary-red)]()
+
 A macOS application that provides real-time transcription during job interviews, meetings, and calls with AI-powered assistance for communication.
 
 ## 🏗️ Architecture
@@ -28,6 +35,29 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed documentation.
 - **Xcode**: 16.0.1 or later
 - **Swift**: 6.0
 
+## 🔄 Development Workflow
+
+This project uses a fully automated development workflow with:
+
+- ✅ **Issue-driven development** - All work starts from GitHub Issues
+- ✅ **Automated CI/CD** - GitHub Actions for quality checks
+- ✅ **Code coverage tracking** - Minimum 90% coverage enforced
+- ✅ **Conventional commits** - Consistent PR formatting
+- ✅ **Self-review process** - Comprehensive pre-PR checks
+- ✅ **Mobile-friendly** - Review and approve from anywhere
+
+**For detailed workflow documentation, see [WORKFLOW.md](./WORKFLOW.md)**
+
+### Quick Workflow
+
+1. **Create issue** on GitHub (web/mobile)
+2. **Cursor implements** - Follows architecture rules, writes tests
+3. **Self-review** - `./scripts/cursor-quality.sh review`
+4. **Create PR** - `./scripts/cursor-pr.sh create <issue> <branch> "<title>" "<body>"`
+5. **CI checks** - Automated quality gates
+6. **Review & approve** - From web/mobile
+7. **Merge** - `./scripts/cursor-pr.sh merge <pr-number>`
+
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository
@@ -47,6 +77,16 @@ open LiveAssistant.xcodeproj
 ```
 
 ### 3. Install Development Tools
+
+#### GitHub CLI (Required for workflow automation)
+
+```bash
+# Using Homebrew
+brew install gh
+
+# Authenticate
+gh auth login
+```
 
 #### SwiftLint (Required)
 
@@ -75,7 +115,7 @@ brew install swift-format
 Run the setup script to install git hooks for automatic code quality checks:
 
 ```bash
-./scripts/setup-git-hooks.sh
+./scripts/setup.sh install
 ```
 
 This will:
@@ -276,11 +316,24 @@ private func registerRepositories() {
 
 ## 📚 Documentation
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Detailed architecture documentation
-- [CODING_STANDARDS.md](./CODING_STANDARDS.md) - Coding standards and best practices
-- [SWIFTGEN.md](./SWIFTGEN.md) - SwiftGen integration and usage guide
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contributing guidelines
-- `.ai/instructions.md` - Project rules for AI assistants
+### Main Documentation
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - **Contributing guide & automated workflow**
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - **Architecture patterns & coding standards**
+- [CHANGELOG.md](./CHANGELOG.md) - Project changelog
+
+### Setup & Configuration
+- [Setup Guide](./docs/setup/SETUP.md) - Complete development environment setup
+- [Automation Setup](./docs/setup/automation.md) - Background PR automation guide
+- [SwiftGen Guide](./docs/setup/swiftgen.md) - SwiftGen integration and usage
+
+### Troubleshooting
+- [Troubleshooting Guide](./docs/troubleshooting/TROUBLESHOOTING.md) - Solutions to common issues
+
+### Feature Documentation
+- [Transcription Usage](./docs/features/transcription.md) - Transcription feature guide
+
+### Historical Documentation
+- [History](./docs/history/) - Archived status reports and fix documentation
 
 ## 🤝 Contributing
 

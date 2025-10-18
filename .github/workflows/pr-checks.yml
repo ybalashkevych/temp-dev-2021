@@ -1,0 +1,447 @@
+name: Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  lint-and-format:
+    name: Code Quality Checks
+    runs-on: macos-26
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        id: swiftlint
+        run: |
+          echo "Running SwiftLint with config..."
+          swiftlint lint > swiftlint-output.txt 2>&1 || echo "SWIFTLINT_FAILED=true" >> $GITHUB_ENV
+          cat swiftlint-output.txt
+        continue-on-error: true
+
+      - name: Run swift-format
+        id: swiftformat
+        run: |
+          echo "Running swift-format with config..."
+          # Exclude Generated directory from formatting
+          find LiveAssistant LiveAssistantTests -name "*.swift" ! -path "*/Generated/*" -print0 | \
+            xargs -0 xcrun swift-format lint --configuration .swift-format > swiftformat-output.txt 2>&1 || echo "SWIFTFORMAT_FAILED=true" >> $GITHUB_ENV
+          cat swiftformat-output.txt
+        continue-on-error: true
+
+      - name: Upload lint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-results
+          path: |
+            swiftlint-output.txt
+            swiftformat-output.txt
+          retention-days: 1
+
+      - name: Check lint results
+        run: |
+          if [ "$SWIFTLINT_FAILED" == "true" ] || [ "$SWIFTFORMAT_FAILED" == "true" ]; then
+            echo "❌ Code quality checks failed"
+            exit 1
+          fi
+          echo "✅ All code quality checks passed"
+
+  build:
+    name: Build
+    runs-on: macos-26
+    needs: lint-and-format
+    timeout-minutes: 30
+    
+    env:
+      SWIFT_ENABLE_EXPERIMENTAL_FEATURES: "0"
+      DERIVED_DATA_PATH: DerivedData
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Cache Build Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/Package.resolved') }}-${{ hashFiles('**/*.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-${{ hashFiles('**/Package.resolved') }}-
+            ${{ runner.os }}-xcode-
+
+      - name: Clean stale build artifacts
+        run: |
+          echo "Cleaning DerivedData to remove stale SwiftLint artifacts..."
+          rm -rf DerivedData
+          
+      - name: Resolve SPM dependencies
+        run: xcodebuild -resolvePackageDependencies -scheme LiveAssistant -skipPackagePluginValidation -skipMacroValidation
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -scheme LiveAssistant \
+            -destination 'platform=macOS,arch=arm64' \
+            -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA_PATH" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: DerivedData
+          retention-days: 1
+
+  test-and-coverage:
+    name: Tests & Coverage
+    runs-on: macos-26
+    needs: build
+    timeout-minutes: 30
+    
+    env:
+      SWIFT_ENABLE_EXPERIMENTAL_FEATURES: "0"
+      DERIVED_DATA_PATH: DerivedData
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: DerivedData
+
+      - name: Download Lint Results
+        uses: actions/download-artifact@v4
+        with:
+          name: lint-results
+
+      - name: Run tests with coverage
+        id: test
+        run: |
+          xcodebuild test \
+            -scheme LiveAssistant \
+            -destination 'platform=macOS,arch=arm64' \
+            -testPlan LiveAssistant \
+            -enableCodeCoverage YES \
+            -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA_PATH" \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_ALLOWED=YES \
+            -resultBundlePath TestResults.xcresult 2>&1 | tee test-output.txt || echo "TESTS_FAILED=true" >> $GITHUB_ENV
+        continue-on-error: true
+
+      - name: Generate coverage report
+        if: always()
+        run: |
+          # Add debugging
+          echo "📊 Checking xcresult bundle..."
+          ls -lh TestResults.xcresult/ || echo "❌ xcresult not found"
+          
+          # Check if xcresult exists
+          if [ ! -d "TestResults.xcresult" ]; then
+            echo "0.00" > coverage_result.txt
+            echo "FAILED" > coverage_status.txt
+            echo "⚠️ TestResults.xcresult not found - tests may have failed before completion"
+            exit 0
+          fi
+          
+          echo "📊 Generating coverage JSON..."
+          # Generate coverage JSON
+          if ! xcrun xccov view --report --json TestResults.xcresult > coverage.json 2>&1; then
+            echo "0.00" > coverage_result.txt
+            echo "FAILED" > coverage_status.txt
+            echo "⚠️ Failed to generate coverage report"
+            exit 0
+          fi
+          
+          echo "📊 Coverage JSON size:"
+          ls -lh coverage.json
+          
+          echo "📊 Coverage JSON preview:"
+          head -20 coverage.json
+          
+          # Parse coverage JSON and calculate percentage
+          # Exclude: Views (SwiftUI), Tests, Generated files
+          python3 << 'EOF'
+          import json
+          import sys
+          
+          try:
+              with open('coverage.json', 'r') as f:
+                  coverage_data = json.load(f)
+          except Exception as e:
+              print(f"Error reading coverage.json: {e}")
+              with open('coverage_result.txt', 'w') as f:
+                  f.write("0.00")
+              with open('coverage_status.txt', 'w') as f:
+                  f.write("FAILED")
+              sys.exit(0)
+          
+          total_lines = 0
+          covered_lines = 0
+          excluded_patterns = [
+              'Views/',
+              'View.swift',
+              'Tests/',
+              'Generated/',
+              'UITests/',
+              '.xctest'
+          ]
+          
+          def should_exclude(filepath):
+              return any(pattern in filepath for pattern in excluded_patterns)
+          
+          def process_target(target):
+              global total_lines, covered_lines
+              
+              for file_data in target.get('files', []):
+                  filepath = file_data.get('path', '')
+                  
+                  if should_exclude(filepath):
+                      continue
+                  
+                  for function in file_data.get('functions', []):
+                      exec_count = function.get('executableLines', 0)
+                      exec_covered = function.get('coveredLines', 0)
+                      
+                      total_lines += exec_count
+                      covered_lines += exec_covered
+          
+          # Process all targets
+          for target in coverage_data.get('targets', []):
+              process_target(target)
+          
+          if total_lines > 0:
+              coverage_pct = (covered_lines / total_lines) * 100
+          else:
+              coverage_pct = 0.0
+          
+          print(f"Total executable lines: {total_lines}")
+          print(f"Covered lines: {covered_lines}")
+          print(f"Coverage: {coverage_pct:.2f}%")
+          
+          # Write to file for next step
+          with open('coverage_result.txt', 'w') as f:
+              f.write(f"{coverage_pct:.2f}")
+          
+          # Check threshold
+          threshold = 30.0  # Start low, increase gradually
+          if coverage_pct < threshold:
+              print(f"\n⚠️ Coverage {coverage_pct:.2f}% is below threshold {threshold}%")
+              with open('coverage_status.txt', 'w') as f:
+                  f.write("FAILED")
+          else:
+              print(f"\n✅ Coverage {coverage_pct:.2f}% meets threshold {threshold}%")
+              with open('coverage_status.txt', 'w') as f:
+                  f.write("PASSED")
+          EOF
+
+      - name: Extract test failures
+        if: always()
+        run: |
+          echo "TEST_ERRORS<<EOF" >> $GITHUB_ENV
+          if [ "$TESTS_FAILED" == "true" ]; then
+            grep -E "error:|failed:|Test Case.*failed" test-output.txt | head -20 || echo "Tests failed but no specific errors captured"
+          fi
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Generate combined PR comment
+        if: always()
+        run: |
+          COVERAGE=$(cat coverage_result.txt 2>/dev/null || echo "N/A")
+          COVERAGE_STATUS=$(cat coverage_status.txt 2>/dev/null || echo "UNKNOWN")
+          THRESHOLD=30.0
+          
+          {
+            echo "## 🔍 PR Validation Results"
+            echo ""
+            
+            # SwiftLint
+            if [ -f "swiftlint-output.txt" ]; then
+              if grep -q "warning:" swiftlint-output.txt || grep -q "error:" swiftlint-output.txt; then
+                echo "❌ **SwiftLint**: Failed"
+                echo ""
+                echo "<details><summary>⚠️ Click to see SwiftLint violations</summary>"
+                echo ""
+                echo "\`\`\`"
+                cat swiftlint-output.txt | head -30
+                echo "\`\`\`"
+                echo "</details>"
+              else
+                echo "✅ **SwiftLint**: Passed"
+              fi
+            else
+              echo "✅ **SwiftLint**: Passed"
+            fi
+            echo ""
+            
+            # swift-format
+            if [ -f "swiftformat-output.txt" ] && [ -s "swiftformat-output.txt" ]; then
+              echo "❌ **swift-format**: Failed"
+              echo ""
+              echo "<details><summary>⚠️ Click to see formatting issues</summary>"
+              echo ""
+              echo "\`\`\`"
+              cat swiftformat-output.txt | head -30
+              echo "\`\`\`"
+              echo "</details>"
+            else
+              echo "✅ **swift-format**: Passed"
+            fi
+            echo ""
+            
+            # Build (always passes if we reach this job)
+            echo "✅ **Build**: Passed"
+            echo ""
+            
+            # Tests
+            if [ "$TESTS_FAILED" == "true" ]; then
+              echo "❌ **Unit Tests**: Failed"
+              echo ""
+              echo "<details><summary>🔴 Click to see test failures</summary>"
+              echo ""
+              echo "\`\`\`"
+              echo "$TEST_ERRORS"
+              echo "\`\`\`"
+              echo ""
+              echo "**Full logs**: [View in Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+              echo "</details>"
+            else
+              echo "✅ **Unit Tests**: Passed"
+            fi
+            echo ""
+            
+            # Coverage
+            if [ "$COVERAGE" == "N/A" ] || [ "$COVERAGE" == "0.00" ]; then
+              echo "⚠️ **Coverage**: Could not calculate (tests may have failed)"
+              echo ""
+              echo "_Coverage reporting requires successful test execution_"
+            elif [ "$COVERAGE_STATUS" == "FAILED" ]; then
+              echo "❌ **Coverage**: ${COVERAGE}% (threshold: ${THRESHOLD}%)"
+              echo ""
+              echo "⚠️ Coverage is below the required threshold. Please add tests for:"
+              echo "- ViewModels"
+              echo "- Repositories"
+              echo "- Services"
+            elif [ "$COVERAGE_STATUS" == "PASSED" ]; then
+              echo "✅ **Coverage**: ${COVERAGE}% (threshold: ${THRESHOLD}%)"
+            else
+              echo "⚠️ **Coverage**: Could not calculate"
+            fi
+            echo ""
+            
+            # Overall status
+            if [ "$TESTS_FAILED" == "true" ] || [ "$COVERAGE_STATUS" == "FAILED" ]; then
+              echo "---"
+              echo "## ⚠️ Action Required"
+              echo ""
+              if [ "$TESTS_FAILED" == "true" ]; then
+                echo "1. 🔴 **Fix test failures** (see details above)"
+              fi
+              if [ "$COVERAGE_STATUS" == "FAILED" ]; then
+                echo "2. 📊 **Increase code coverage** to at least ${THRESHOLD}%"
+              fi
+              echo ""
+              echo "Then push your changes to trigger checks again."
+            else
+              echo "---"
+              echo "## 🎉 All Checks Passed!"
+              echo ""
+              echo "Great work! Your code meets all quality standards."
+            fi
+            
+            echo ""
+            echo "---"
+            echo "*Excluded from coverage: SwiftUI Views, Test files, Generated files*"
+          } > pr-comment.md
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('pr-comment.md', 'utf8');
+            
+            // Find existing bot comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('PR Validation Results')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-and-coverage-results
+          path: |
+            TestResults.xcresult
+            coverage.json
+            coverage_result.txt
+            test-output.txt
+          retention-days: 7
+
+      - name: Check final status
+        run: |
+          COVERAGE_STATUS=$(cat coverage_status.txt 2>/dev/null || echo "UNKNOWN")
+          
+          if [ "$TESTS_FAILED" == "true" ]; then
+            echo "❌ Tests failed"
+            exit 1
+          fi
+          
+          if [ "$COVERAGE_STATUS" == "FAILED" ]; then
+            COVERAGE=$(cat coverage_result.txt)
+            echo "❌ Coverage $COVERAGE% is below threshold 30%"
+            exit 1
+          fi
+          
+          echo "✅ All checks passed"

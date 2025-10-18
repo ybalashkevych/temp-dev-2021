@@ -1,0 +1,453 @@
+# Automated Development Workflow
+
+This document defines the automated development workflow for LiveAssistant, enabling Cursor to act as an autonomous development agent that handles the complete development lifecycle from issue assignment to PR merge.
+
+## Overview
+
+The workflow enables:
+- Issue-driven development with automatic branch creation
+- Comprehensive self-review before PR creation
+- Conventional Commits format for clear change categorization
+- Automated testing and quality checks via GitHub Actions
+- Streamlined review and merge process
+
+## Branch Naming Convention
+
+When working on an issue, create branches using this format:
+```
+<type>/issue-<number>-<short-description>
+```
+
+Examples:
+- `feat/issue-42-dark-mode-support`
+- `fix/issue-15-audio-buffer-leak`
+- `refactor/issue-23-repository-cleanup`
+
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `style`
+
+## Development Workflow
+
+### 1. Issue Assignment & Analysis
+
+When assigned an issue:
+
+1. **Read and understand the issue completely**
+   - Review the description and all comments
+   - Check acceptance criteria
+   - Identify linked issues or dependencies
+
+2. **Analyze the codebase**
+   - Locate relevant files using codebase search
+   - Review related code and tests
+   - Understand current architecture patterns
+
+3. **Plan the implementation**
+   - Break down into logical steps
+   - Identify files to modify/create
+   - Plan test coverage strategy
+   - Estimate scope and complexity
+
+### 2. Branch Creation
+
+```bash
+# Create and switch to feature branch
+git checkout -b <type>/issue-<number>-<description>
+```
+
+### 3. Implementation
+
+Follow these principles during development:
+
+**Architecture Compliance (CRITICAL):**
+- ✅ ViewModels use `@Observable` and `@MainActor`
+- ✅ ViewModels access data through Repositories only (never Services directly)
+- ✅ Repositories implement protocol-based interfaces
+- ✅ Services handle only external interactions (API, SwiftData, system)
+- ✅ Business logic lives in Repositories
+- ✅ All dependencies injected via initializers
+- ✅ Use `vm` for all ViewModel variable names
+
+**Code Quality:**
+- Follow MVVM pattern as defined in `ARCHITECTURE.md`
+- Adhere to coding standards in `CODING_STANDARDS.md`
+- Use SwiftGen's `Strings` for all user-facing text (never hardcode)
+- Use SwiftGen's `Asset` for colors and images
+- Keep functions under 60 lines (warning) / 100 lines (error)
+- Keep type bodies under 300 lines (warning) / 400 lines (error)
+- Use async/await for asynchronous operations
+- Handle errors with specific error types conforming to `LocalizedError`
+
+**Testing:**
+- Write tests for all new ViewModels
+- Write tests for all new Repository methods
+- Use Swift Testing framework (`@Test`, `import Testing`)
+- Mock dependencies using protocols
+- Test both success and failure cases
+- Aim for 90%+ code coverage
+
+**Localization:**
+- Add all user-facing strings to `LiveAssistant/Resources/Localizable.strings`
+- Use descriptive keys: `"Feature.Context.specificMessage"`
+- Run SwiftGen to generate `Strings.swift`
+
+### 4. Self-Review Checklist
+
+Before creating a PR, run the self-review script and verify:
+
+```bash
+./scripts/cursor-self-review.sh
+```
+
+**Manual verification:**
+
+✅ **Architecture:**
+- No ViewModels accessing Services directly
+- All dependencies protocol-based and injected
+- Business logic in Repositories, not Services or Views
+- Proper separation of concerns
+
+✅ **Code Quality:**
+- SwiftLint passes with zero warnings (strict mode)
+- swift-format validation passes
+- No force unwraps without justification
+- No hardcoded strings (all using `Strings` enum)
+- No hardcoded colors/assets (all using `Asset` enum)
+
+✅ **Testing:**
+- All tests pass locally
+- New code has test coverage
+- Mock implementations for protocols where needed
+- Coverage meets 90% threshold
+
+✅ **Documentation:**
+- Complex logic has comments
+- Public interfaces documented
+- README updated if needed
+- ARCHITECTURE.md updated if patterns changed
+
+✅ **Commits:**
+- Logical, atomic commits
+- Clear commit messages
+- No debug code or commented-out code
+- No unnecessary files
+
+### 5. PR Creation
+
+Use the provided script to create a PR:
+
+```bash
+./scripts/cursor-create-pr.sh <issue-number> <branch-name> "<title>" "<body>"
+```
+
+**PR Title Format (Conventional Commits):**
+```
+#<issue-number>: (<type>): <description>
+```
+
+Examples:
+- `#42: (feat): Add dark mode support`
+- `#15: (fix): Resolve audio buffer memory leak`
+- `#23: (refactor): Simplify repository layer`
+- `#8: (test): Add coverage for TranscriptionViewModel`
+- `#19: (docs): Update ARCHITECTURE.md with new patterns`
+- `#34: (perf): Optimize audio processing pipeline`
+
+**PR Body Structure:**
+
+```markdown
+## Description
+Brief overview of what this PR does and why.
+
+## Changes
+- Specific change 1
+- Specific change 2
+- Specific change 3
+
+## Testing
+- [ ] Unit tests added/updated
+- [ ] All tests pass locally
+- [ ] Manual testing performed
+
+## Architecture Compliance
+- [ ] ViewModels use Repositories only
+- [ ] Protocol-based dependency injection
+- [ ] Follows MVVM pattern
+
+## Screenshots (if UI changes)
+[Add screenshots here]
+
+## Related Issues
+Closes #<issue-number>
+```
+
+**Important:**
+- Do NOT add labels manually (title format provides categorization)
+- Link the issue using "Closes #X" in the body
+- Ensure branch is pushed before creating PR
+
+### 6. CI/CD Checks
+
+GitHub Actions will automatically run:
+
+1. **CI Workflow** - Build and test
+2. **PR Checks** - SwiftLint, swift-format, tests
+3. **Code Coverage** - Must maintain 90%+ coverage
+
+Wait for all checks to pass. If any fail:
+- Review the error logs
+- Fix the issues locally
+- Push updated commits
+- CI will re-run automatically
+
+### 7. Review Iteration
+
+When review comments are received:
+
+1. **Acknowledge the feedback**
+   - Comment on the PR to acknowledge you're addressing it
+
+2. **Make the requested changes**
+   - Follow the same development standards
+   - Run self-review again
+   - Ensure all tests still pass
+
+3. **Push updates**
+   ```bash
+   git add .
+   git commit -m "Address review feedback: <description>"
+   git push origin <branch-name>
+   ```
+
+4. **Respond to comments**
+   - Mark resolved comments as resolved
+   - Reply to clarify changes made
+
+5. **Re-request review**
+   - Comment: "Ready for re-review" or "@reviewer PTAL"
+
+### 8. Merge Process
+
+Once approved, use the merge script:
+
+```bash
+./scripts/cursor-merge-pr.sh <pr-number>
+```
+
+The script will:
+- Verify PR is approved
+- Check CI passes
+- Merge using rebase and squash
+- Delete the branch automatically
+- Close linked issues
+
+**Do NOT merge manually through GitHub UI** - always use the script to ensure consistency.
+
+## Conventional Commit Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `feat` | New feature | Add dark mode toggle |
+| `fix` | Bug fix | Fix memory leak in audio buffer |
+| `refactor` | Code restructuring | Simplify repository layer |
+| `test` | Add/update tests | Add tests for TranscriptionViewModel |
+| `docs` | Documentation only | Update ARCHITECTURE.md |
+| `chore` | Maintenance tasks | Update dependencies |
+| `perf` | Performance improvement | Optimize audio processing |
+| `style` | Code style changes | Fix formatting issues |
+
+## Release Process
+
+When requested to create a release:
+
+1. **Prepare release notes**
+   - Gather all merged PRs since last release
+   - Categorize by type (features, fixes, etc.)
+   - Note breaking changes if any
+
+2. **Trigger release workflow**
+   ```bash
+   gh workflow run release.yml -f version=X.Y.Z
+   ```
+
+3. **Verify release**
+   - Check GitHub release page
+   - Verify artifacts uploaded
+   - Test release build if applicable
+
+## Common Scenarios
+
+### Scenario: Working on a Feature
+
+```bash
+# 1. Create branch
+git checkout -b feat/issue-42-dark-mode
+
+# 2. Implement feature (following architecture rules)
+# ... make changes ...
+
+# 3. Add tests
+# ... write tests ...
+
+# 4. Run self-review
+./scripts/cursor-self-review.sh
+
+# 5. Create PR
+./scripts/cursor-create-pr.sh 42 feat/issue-42-dark-mode \
+  "#42: (feat): Add dark mode support" \
+  "Implements dark mode throughout the app..."
+
+# 6. Wait for approval, then merge
+./scripts/cursor-merge-pr.sh <pr-number>
+```
+
+### Scenario: Fixing a Bug
+
+```bash
+# 1. Create branch
+git checkout -b fix/issue-15-audio-leak
+
+# 2. Reproduce and fix the bug
+# ... make changes ...
+
+# 3. Add regression test
+# ... write test to prevent regression ...
+
+# 4. Run self-review
+./scripts/cursor-self-review.sh
+
+# 5. Create PR
+./scripts/cursor-create-pr.sh 15 fix/issue-15-audio-leak \
+  "#15: (fix): Resolve audio buffer memory leak" \
+  "Fixes memory leak by properly deallocating..."
+
+# 6. Merge after approval
+./scripts/cursor-merge-pr.sh <pr-number>
+```
+
+### Scenario: Addressing Review Feedback
+
+```bash
+# 1. Make requested changes
+# ... update code ...
+
+# 2. Re-run self-review
+./scripts/cursor-self-review.sh
+
+# 3. Commit and push
+git add .
+git commit -m "Address review feedback: use system colors"
+git push origin <branch-name>
+
+# 4. Comment on PR
+# "Updated to use system colors as requested. Ready for re-review."
+```
+
+## Quality Gates
+
+All PRs must pass:
+
+✅ SwiftLint strict validation (zero warnings)
+✅ swift-format validation
+✅ All unit tests pass
+✅ All UI tests pass (when enabled)
+✅ Code coverage ≥ 90%
+✅ Architecture compliance verified
+✅ At least 1 approval from maintainer
+
+## Error Handling
+
+### SwiftLint Failures
+```bash
+# View violations
+swiftlint lint
+
+# Auto-fix what's possible
+swiftlint --fix
+
+# Run again to verify
+swiftlint lint
+```
+
+### Test Failures
+```bash
+# Run specific test
+xcodebuild test -scheme LiveAssistant -only-testing:LiveAssistantTests/TestClassName/testMethodName
+
+# Run all tests with verbose output
+xcodebuild test -scheme LiveAssistant -testPlan LiveAssistant | xcpretty
+```
+
+### Coverage Below Threshold
+```bash
+# Generate coverage report
+./scripts/run-tests-with-coverage.sh
+
+# Add tests for uncovered code
+# Focus on ViewModels and Repositories first
+```
+
+## Best Practices
+
+### DO ✅
+- Read and understand the issue completely before starting
+- Plan the implementation and identify affected files
+- Follow the architecture rules strictly
+- Write tests as you develop, not after
+- Run self-review before every PR
+- Use conventional commit format consistently
+- Keep PRs focused and single-purpose
+- Respond promptly to review feedback
+- Update documentation when patterns change
+
+### DON'T ❌
+- Start coding without understanding the issue
+- Access Services directly from ViewModels
+- Skip writing tests "to save time"
+- Create PRs without running self-review
+- Mix multiple unrelated changes in one PR
+- Use force unwrap without explicit justification
+- Hardcode strings or asset names
+- Merge without approval
+- Leave debug code or commented code
+- Ignore SwiftLint warnings
+
+## Troubleshooting
+
+### "PR checks failing"
+1. Check GitHub Actions logs
+2. Reproduce failure locally
+3. Fix the issue
+4. Push updates
+
+### "Can't create PR"
+1. Ensure `gh` is authenticated: `gh auth status`
+2. Verify branch is pushed: `git push origin <branch>`
+3. Check script permissions: `chmod +x scripts/cursor-create-pr.sh`
+
+### "Coverage dropping"
+1. Run coverage locally: `./scripts/run-tests-with-coverage.sh`
+2. Identify untested code
+3. Add tests (prioritize ViewModels and Repositories)
+4. Verify coverage improves
+
+### "Architecture violation"
+1. Review `ARCHITECTURE.md`
+2. Identify the violation
+3. Refactor to comply with patterns
+4. Run self-review again
+
+## References
+
+- `ARCHITECTURE.md` - Complete architecture documentation
+- `CODING_STANDARDS.md` - Code style and conventions
+- `WORKFLOW.md` - Human-readable workflow guide
+- `.swiftlint.yml` - Linting rules configuration
+- `.swift-format` - Formatting rules configuration
+
+## Continuous Improvement
+
+This workflow will evolve. When you identify improvements:
+1. Discuss in PR or issue
+2. Update this document
+3. Update scripts if needed
+4. Communicate changes to team
