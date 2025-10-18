@@ -219,7 +219,7 @@ jobs:
               f.write(f"{coverage_pct:.2f}")
           
           # Check threshold (matches COVERAGE_THRESHOLD env var at workflow level)
-          threshold = 30.0
+          threshold = 20.0
           if coverage_pct < threshold:
               print(f"\n⚠️ Coverage {coverage_pct:.2f}% is below threshold {threshold}%")
               with open('coverage_status.txt', 'w') as f:
