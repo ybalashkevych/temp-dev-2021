@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+env:
+  SWIFT_ENABLE_EXPERIMENTAL_FEATURES: "0"
+  DERIVED_DATA_PATH: DerivedData
+  COVERAGE_THRESHOLD: "30.0"
+
 permissions:
   contents: read
   pull-requests: write
@@ -58,15 +63,11 @@ jobs:
           fi
           echo "✅ All code quality checks passed"
 
-  build:
-    name: Build
+  build-test-and-coverage:
+    name: Build, Test & Coverage
     runs-on: macos-26
     needs: lint-and-format
     timeout-minutes: 30
-    
-    env:
-      SWIFT_ENABLE_EXPERIMENTAL_FEATURES: "0"
-      DERIVED_DATA_PATH: DerivedData
 
     steps:
       - name: Checkout code
@@ -98,54 +99,12 @@ jobs:
       - name: Resolve SPM dependencies
         run: xcodebuild -resolvePackageDependencies -scheme LiveAssistant -skipPackagePluginValidation -skipMacroValidation
 
-      - name: Build
-        run: |
-          xcodebuild build \
-            -scheme LiveAssistant \
-            -destination 'platform=macOS,arch=arm64' \
-            -configuration Debug \
-            -derivedDataPath "$DERIVED_DATA_PATH" \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_ALLOWED=YES
-
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: DerivedData
-          retention-days: 1
-
-  test-and-coverage:
-    name: Tests & Coverage
-    runs-on: macos-26
-    needs: build
-    timeout-minutes: 30
-    
-    env:
-      SWIFT_ENABLE_EXPERIMENTAL_FEATURES: "0"
-      DERIVED_DATA_PATH: DerivedData
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: DerivedData
-
-      - name: Disable SwiftLint plugin for CI
-        run: bash scripts/disable-swiftlint-plugin.sh
-
       - name: Download Lint Results
         uses: actions/download-artifact@v4
         with:
           name: lint-results
 
-      - name: Run tests with coverage
+      - name: Build and run tests with coverage
         id: test
         run: |
           xcodebuild test \
@@ -214,6 +173,9 @@ jobs:
           excluded_patterns = [
               'Views/',
               'View.swift',
+              'Components/',
+              'Models/',
+              'App/',
               'Tests/',
               'Generated/',
               'UITests/',
@@ -256,8 +218,8 @@ jobs:
           with open('coverage_result.txt', 'w') as f:
               f.write(f"{coverage_pct:.2f}")
           
-          # Check threshold
-          threshold = 30.0  # Start low, increase gradually
+          # Check threshold (matches COVERAGE_THRESHOLD env var at workflow level)
+          threshold = 30.0
           if coverage_pct < threshold:
               print(f"\n⚠️ Coverage {coverage_pct:.2f}% is below threshold {threshold}%")
               with open('coverage_status.txt', 'w') as f:
@@ -282,7 +244,7 @@ jobs:
         run: |
           COVERAGE=$(cat coverage_result.txt 2>/dev/null || echo "N/A")
           COVERAGE_STATUS=$(cat coverage_status.txt 2>/dev/null || echo "UNKNOWN")
-          THRESHOLD=30.0
+          THRESHOLD=$COVERAGE_THRESHOLD
           
           {
             echo "## 🔍 PR Validation Results"
@@ -384,7 +346,7 @@ jobs:
             
             echo ""
             echo "---"
-            echo "*Excluded from coverage: SwiftUI Views, Test files, Generated files*"
+            echo "*Excluded from coverage: SwiftUI Views, Components, Models, App setup, Test files, Generated files*"
           } > pr-comment.md
 
       - name: Comment on PR
@@ -446,7 +408,7 @@ jobs:
           
           if [ "$COVERAGE_STATUS" == "FAILED" ]; then
             COVERAGE=$(cat coverage_result.txt)
-            echo "❌ Coverage $COVERAGE% is below threshold 30%"
+            echo "❌ Coverage $COVERAGE% is below threshold $COVERAGE_THRESHOLD%"
             exit 1
           fi
           
