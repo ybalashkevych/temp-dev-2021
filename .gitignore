@@ -140,6 +140,7 @@ release_notes.md
 # Background Automation
 logs/*.log
 logs/*.error.log
+logs/*.pid
 .cursor-feedback.txt
 .cursor-conflicts.txt
 

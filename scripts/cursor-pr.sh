@@ -291,10 +291,8 @@ cmd_process() {
     
     # Get PR details
     log INFO "Fetching PR details..."
-    PR_DATA=$(gh pr view "$PR_NUMBER" --json number,title,headRefName,comments,reviews)
-    
-    BRANCH=$(echo "$PR_DATA" | jq -r '.headRefName')
-    PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+    BRANCH=$(gh pr view "$PR_NUMBER" --json headRefName --jq '.headRefName')
+    PR_TITLE=$(gh pr view "$PR_NUMBER" --json title --jq '.title')
     
     log INFO "PR Title: $PR_TITLE"
     log INFO "Branch: $BRANCH"
@@ -326,14 +324,16 @@ cmd_process() {
     echo "" >> "$FEEDBACK_FILE"
     
     # Add comments (exclude resolved)
-    COMMENTS=$(echo "$PR_DATA" | jq -r '.comments[]? | select(.isResolved != true) | "**\(.author.login)** commented:\n\(.body)\n"')
+    COMMENTS=$(gh pr view "$PR_NUMBER" --json comments \
+        --jq '.comments[]? | select(.isResolved != true) | "**\(.author.login)** commented:\n\(.body)\n"' 2>/dev/null)
     if [ -n "$COMMENTS" ]; then
         echo "## Comments" >> "$FEEDBACK_FILE"
         echo "$COMMENTS" >> "$FEEDBACK_FILE"
     fi
     
     # Add reviews
-    REVIEWS=$(echo "$PR_DATA" | jq -r '.reviews[]? | "**\(.author.login)** \(.state):\n\(.body)\n"')
+    REVIEWS=$(gh pr view "$PR_NUMBER" --json reviews \
+        --jq '.reviews[]? | "**\(.author.login)** \(.state):\n\(.body)\n"' 2>/dev/null)
     if [ -n "$REVIEWS" ]; then
         echo "## Reviews" >> "$FEEDBACK_FILE"
         echo "$REVIEWS" >> "$FEEDBACK_FILE"

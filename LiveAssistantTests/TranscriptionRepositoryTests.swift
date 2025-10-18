@@ -211,9 +211,7 @@ final class MockTranscriptionService: TranscriptionServiceProtocol {
     var stopTranscriptionCallCount = 0
     var stopAllCallCount = 0
 
-    func startTranscription(source: SpeakerType, audioStream: AsyncStream<AudioBuffer>) async -> AsyncStream<
-        TranscriptionResult
-    > {
+    func startTranscription(source: SpeakerType, audioStream: AsyncStream<AudioBuffer>) async -> AsyncStream<TranscriptionResult> {
         startTranscriptionCallCount += 1
         return AsyncStream { _ in }
     }

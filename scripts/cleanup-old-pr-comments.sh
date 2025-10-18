@@ -17,21 +17,23 @@ fi
 
 echo "🔍 Finding old bot comments on PR #${PR_NUMBER}..."
 
-# Get all comments on the PR
-COMMENTS=$(gh api "/repos/:owner/:repo/issues/${PR_NUMBER}/comments" --jq '.[] | select(.user.type == "Bot") | {id: .id, body: .body | split("\n") | .[0]}')
+# Get all bot comment IDs and their first line
+BOT_COMMENT_LIST=$(gh api "/repos/:owner/:repo/issues/${PR_NUMBER}/comments" \
+    --jq '.[] | select(.user.type == "Bot") | "Comment ID: \(.id) - \(.body | split("\n") | .[0])"' 2>/dev/null)
 
-if [ -z "$COMMENTS" ]; then
+if [ -z "$BOT_COMMENT_LIST" ]; then
     echo "✅ No bot comments found on PR #${PR_NUMBER}"
     exit 0
 fi
 
 echo ""
 echo "Found bot comments:"
-echo "$COMMENTS" | jq -r '"Comment ID: \(.id) - \(.body)"'
+echo "$BOT_COMMENT_LIST"
 echo ""
 
 # Look for old "Code Coverage Report" comments (from deleted code-coverage.yml)
-OLD_COVERAGE_COMMENTS=$(echo "$COMMENTS" | jq -r 'select(.body | contains("Code Coverage Report")) | .id')
+OLD_COVERAGE_COMMENTS=$(gh api "/repos/:owner/:repo/issues/${PR_NUMBER}/comments" \
+    --jq '[.[] | select(.user.type == "Bot" and (.body | contains("Code Coverage Report")))] | .[].id' 2>/dev/null)
 
 if [ -n "$OLD_COVERAGE_COMMENTS" ]; then
     echo "🗑️  Found old 'Code Coverage Report' comments to delete:"
@@ -52,5 +54,6 @@ fi
 
 echo ""
 echo "📝 Current bot comments on PR #${PR_NUMBER}:"
-gh api "/repos/:owner/:repo/issues/${PR_NUMBER}/comments" --jq '.[] | select(.user.type == "Bot") | .body | split("\n") | .[0]'
+gh api "/repos/:owner/:repo/issues/${PR_NUMBER}/comments" \
+    --jq '[.[] | select(.user.type == "Bot")] | .[].body | split("\n") | .[0]' 2>/dev/null
 

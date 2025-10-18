@@ -153,11 +153,9 @@ analyze_feedback() {
     
     local replied_count=0
     
-    # Get ALL review comments (to analyze threads)
-    local all_review_comments=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" --jq '.' 2>/dev/null)
-    
-    # Get parent comment IDs (threads start here)
-    local parent_ids=$(echo "$all_review_comments" | jq -r '.[] | select(.in_reply_to_id == null) | .id')
+    # Get parent comment IDs (threads start here) - comments with no in_reply_to_id
+    local parent_ids=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+        --jq '[.[] | select(.in_reply_to_id == null)] | .[].id' 2>/dev/null)
     
     if [ -n "$parent_ids" ]; then
         local total_parents=$(echo "$parent_ids" | wc -l | tr -d ' ')
@@ -169,11 +167,9 @@ analyze_feedback() {
             ((processed++))
             log INFO "Processing thread ${processed}/${total_parents}: #${parent_id}"
             
-            # Get the entire thread (parent + all replies), sorted by time
-            local thread=$(echo "$all_review_comments" | jq -c "[.[] | select(.id == $parent_id or .in_reply_to_id == $parent_id)] | sort_by(.created_at)")
-            
-            # Count replies from ybalashkevych (excluding parent)
-            local my_reply_count=$(echo "$thread" | jq -r '[.[] | select(.in_reply_to_id == '$parent_id' and .user.login == "ybalashkevych")] | length')
+            # Count replies from ybalashkevych in this thread (excluding parent)
+            local my_reply_count=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+                --jq "[.[] | select(.in_reply_to_id == $parent_id and .user.login == \"ybalashkevych\")] | length" 2>/dev/null)
             
             # Skip if I've already replied 2+ times (likely infinite loop)
             if [ "$my_reply_count" -ge 2 ]; then
@@ -181,10 +177,11 @@ analyze_feedback() {
                 continue
             fi
             
-            # Get the last message in the thread
-            local last_msg=$(echo "$thread" | jq -r '.[-1]')
-            local last_msg_body=$(echo "$last_msg" | jq -r '.body')
-            local last_msg_user=$(echo "$last_msg" | jq -r '.user.login')
+            # Get the last message in the thread (from parent + all replies, sorted by time)
+            local last_msg_body=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+                --jq "[.[] | select(.id == $parent_id or .in_reply_to_id == $parent_id)] | sort_by(.created_at) | .[-1].body" 2>/dev/null)
+            local last_msg_user=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+                --jq "[.[] | select(.id == $parent_id or .in_reply_to_id == $parent_id)] | sort_by(.created_at) | .[-1].user.login" 2>/dev/null)
             
             # Skip if last message body is null/empty
             if [ -z "$last_msg_body" ] || [ "$last_msg_body" = "null" ]; then
@@ -217,16 +214,20 @@ analyze_feedback() {
             fi
             
             # Get parent comment details for context
-            local parent_data=$(echo "$all_review_comments" | jq -r ".[] | select(.id == $parent_id)")
-            local parent_user=$(echo "$parent_data" | jq -r '.user.login')
-            local parent_body=$(echo "$parent_data" | jq -r '.body')
-            local parent_path=$(echo "$parent_data" | jq -r '.path')
-            local parent_line=$(echo "$parent_data" | jq -r '.line // .original_line // "unknown"')
+            local parent_user=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+                --jq ".[] | select(.id == $parent_id) | .user.login" 2>/dev/null)
+            local parent_body=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+                --jq ".[] | select(.id == $parent_id) | .body" 2>/dev/null)
+            local parent_path=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+                --jq ".[] | select(.id == $parent_id) | .path" 2>/dev/null)
+            local parent_line=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+                --jq ".[] | select(.id == $parent_id) | (.line // .original_line // \"unknown\")" 2>/dev/null)
             
             log INFO "Responding to thread on ${parent_path} (last msg from ${last_msg_user})..."
             
-            # Build context from the thread
-            local thread_context=$(echo "$thread" | jq -r '.[] | "\(.user.login): \(.body)"' | head -5)
+            # Build context from the thread (first 5 messages)
+            local thread_context=$(gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
+                --jq "[.[] | select(.id == $parent_id or .in_reply_to_id == $parent_id)] | sort_by(.created_at) | .[0:5] | .[] | \"\(.user.login): \(.body)\"" 2>/dev/null)
             
             # Generate contextual response with full Cursor context
             local prompt="@Rules @Codebase @${parent_path}
@@ -278,17 +279,19 @@ Keep your response concise (2-4 sentences) but specific and helpful."
         done <<< "$parent_ids"
     fi
     
-    # Get PR-level comments
-    local all_pr_comments=$(gh api "repos/${repo}/issues/${pr_number}/comments" --jq '.' 2>/dev/null)
-    local pr_comment_ids=$(echo "$all_pr_comments" | jq -r '.[].id')
+    # Get PR-level comment IDs
+    local pr_comment_ids=$(gh api "repos/${repo}/issues/${pr_number}/comments" \
+        --jq '.[].id' 2>/dev/null)
     
     if [ -n "$pr_comment_ids" ]; then
         while IFS= read -r comment_id; do
             [ -z "$comment_id" ] && continue
             
-            local comment_data=$(echo "$all_pr_comments" | jq -r ".[] | select(.id == $comment_id)")
-            local comment_user=$(echo "$comment_data" | jq -r '.user.login')
-            local comment_body=$(echo "$comment_data" | jq -r '.body')
+            # Get comment details
+            local comment_user=$(gh api "repos/${repo}/issues/${pr_number}/comments" \
+                --jq ".[] | select(.id == $comment_id) | .user.login" 2>/dev/null)
+            local comment_body=$(gh api "repos/${repo}/issues/${pr_number}/comments" \
+                --jq ".[] | select(.id == $comment_id) | .body" 2>/dev/null)
             
             # Skip if body is null/empty
             if [ -z "$comment_body" ] || [ "$comment_body" = "null" ]; then
@@ -393,11 +396,16 @@ create_plan() {
         return 1
     fi
     
-    local comment_id=$(echo "$thread_info" | jq -r '.id')
-    local file_path=$(echo "$thread_info" | jq -r '.path // "general"')
-    local line_num=$(echo "$thread_info" | jq -r '.line // "N/A"')
-    local comment_type=$(echo "$thread_info" | jq -r '.type // "review"')
-    local in_reply_to=$(echo "$thread_info" | jq -r '.in_reply_to // .id')
+    # Parse thread info (JSON from find_command_thread) using grep/sed
+    local comment_id=$(echo "$thread_info" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
+    local file_path=$(echo "$thread_info" | grep -o '"path":"[^"]*"' | cut -d'"' -f4)
+    [ -z "$file_path" ] && file_path="general"
+    local line_num=$(echo "$thread_info" | grep -o '"line":[0-9]*' | cut -d':' -f2)
+    [ -z "$line_num" ] && line_num="N/A"
+    local comment_type=$(echo "$thread_info" | grep -o '"type":"[^"]*"' | cut -d'"' -f4)
+    [ -z "$comment_type" ] && comment_type="review"
+    local in_reply_to=$(echo "$thread_info" | grep -o '"in_reply_to":[0-9]*' | cut -d':' -f2)
+    [ -z "$in_reply_to" ] && in_reply_to="$comment_id"
     
     # Get conversation context from this specific thread
     local conversation=$(get_thread_conversation "$pr_number" "$repo" "$comment_id" "$comment_type")
@@ -499,10 +507,14 @@ implement_changes() {
         return 1
     fi
     
-    local comment_id=$(echo "$thread_info" | jq -r '.id')
-    local file_path=$(echo "$thread_info" | jq -r '.path // "general"')
-    local comment_type=$(echo "$thread_info" | jq -r '.type // "review"')
-    local in_reply_to=$(echo "$thread_info" | jq -r '.in_reply_to // .id')
+    # Parse thread info (JSON from find_command_thread) using grep/sed
+    local comment_id=$(echo "$thread_info" | grep -o '"id":[0-9]*' | head -1 | cut -d':' -f2)
+    local file_path=$(echo "$thread_info" | grep -o '"path":"[^"]*"' | cut -d'"' -f4)
+    [ -z "$file_path" ] && file_path="general"
+    local comment_type=$(echo "$thread_info" | grep -o '"type":"[^"]*"' | cut -d'"' -f4)
+    [ -z "$comment_type" ] && comment_type="review"
+    local in_reply_to=$(echo "$thread_info" | grep -o '"in_reply_to":[0-9]*' | cut -d':' -f2)
+    [ -z "$in_reply_to" ] && in_reply_to="$comment_id"
     
     # Get conversation context from this specific thread
     local conversation=$(get_thread_conversation "$pr_number" "$repo" "$comment_id" "$comment_type")

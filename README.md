@@ -58,6 +58,32 @@ This project uses a fully automated development workflow with:
 6. **Review & approve** - From web/mobile
 7. **Merge** - `./scripts/cursor-pr.sh merge <pr-number>`
 
+### Background Daemon (Optional)
+
+The cursor daemon monitors GitHub PRs and automatically responds to feedback.
+
+**Start the daemon:**
+```bash
+./scripts/daemon-control.sh start
+```
+
+**Check status:**
+```bash
+./scripts/daemon-control.sh status
+```
+
+**Stop the daemon:**
+```bash
+./scripts/daemon-control.sh stop
+```
+
+**View logs:**
+```bash
+tail -f logs/cursor-daemon.log
+```
+
+The daemon will continuously monitor PRs every 60 seconds and respond to comments automatically.
+
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository

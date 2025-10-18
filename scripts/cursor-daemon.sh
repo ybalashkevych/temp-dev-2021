@@ -76,13 +76,6 @@ check_prerequisites() {
         exit 1
     fi
     
-    # Check if jq is installed (optional, used for JSON parsing)
-    if ! command -v jq &> /dev/null; then
-        log WARNING "jq is not installed (optional but recommended)"
-        log WARNING "Install with: brew install jq"
-        # Don't exit - daemon can still work without jq
-    fi
-    
     log SUCCESS "All prerequisites met"
 }
 

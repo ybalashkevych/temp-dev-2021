@@ -36,6 +36,28 @@ gh pr create --title "feat: add dark mode support" --body "Description..."
 # 5. After approval, merge via GitHub UI
 ```
 
+## Background Monitoring (Optional)
+
+For automatic PR monitoring, run the cursor daemon:
+
+```bash
+./scripts/daemon-control.sh start
+```
+
+The daemon will:
+- Check for new PR comments every 60 seconds
+- Post analysis as @ybalashkevych
+- Wait for `@ybalashkevych implement` or `@ybalashkevych plan` commands
+- Execute implementation when requested
+
+**Control commands:**
+```bash
+./scripts/daemon-control.sh status   # Check if running
+./scripts/daemon-control.sh stop     # Stop the daemon
+./scripts/daemon-control.sh restart  # Restart the daemon
+tail -f logs/cursor-daemon.log       # View logs
+```
+
 ## Branch Naming
 
 Use this format for all feature branches:
