@@ -72,7 +72,7 @@ get_prs_awaiting_response() {
         --jq '.[].number' 2>/dev/null || echo ""
 }
 
-# Check if comment has required reactions (both eyes and robot)
+# Check if comment has required reactions (both eyes and rocket)
 has_processed_reactions() {
     local comment_id=$1
     local comment_type=$2  # "issue" or "review"
@@ -86,8 +86,8 @@ has_processed_reactions() {
     
     local reactions=$(gh api "$api_endpoint" --jq '.[].content' 2>/dev/null || echo "")
     
-    # Check if both 'eyes' (👀) and 'robot' (🤖) reactions exist
-    if echo "$reactions" | grep -q "eyes" && echo "$reactions" | grep -q "robot"; then
+    # Check if both 'eyes' (👀) and 'rocket' (🚀) reactions exist
+    if echo "$reactions" | grep -q "eyes" && echo "$reactions" | grep -q "rocket"; then
         return 0  # Already fully processed
     fi
     
@@ -98,7 +98,7 @@ has_processed_reactions() {
 add_reaction() {
     local comment_id=$1
     local comment_type=$2  # "issue" or "review"
-    local reaction=$3      # "eyes", "robot", "+1", "-1"
+    local reaction=$3      # "eyes", "rocket", "+1", "-1"
     
     local api_endpoint
     if [ "$comment_type" = "issue" ]; then
@@ -162,14 +162,20 @@ is_conversation_resolved() {
 parse_command() {
     local body=$1
     
+    log_msg DEBUG "Parsing command from: $body"
+    
     # Check for explicit commands
     if echo "$body" | grep -q "@ybalashkevych plan"; then
+        log_msg DEBUG "Detected command: plan"
         echo "plan"
     elif echo "$body" | grep -q "@ybalashkevych fix"; then
+        log_msg DEBUG "Detected command: implement (fix)"
         echo "implement"
     elif echo "$body" | grep -q "@ybalashkevych implement"; then
+        log_msg DEBUG "Detected command: implement"
         echo "implement"
     else
+        log_msg DEBUG "No explicit command found, defaulting to: ask"
         # Default: ask mode for any feedback
         echo "ask"
     fi
@@ -298,8 +304,8 @@ process_feedback() {
         # Step 7: Post response to PR
         post_agent_response "$pr_number" "$comment_id" "$comment_type" "$command" "$response"
         
-        # Step 8: Add 🤖 reaction (marks as agent responded)
-        add_reaction "$comment_id" "$comment_type" "robot"
+        # Step 8: Add 🚀 reaction (marks as agent responded)
+        add_reaction "$comment_id" "$comment_type" "rocket"
         
         # Step 9: Add ✅ reaction (success)
         add_reaction "$comment_id" "$comment_type" "+1"

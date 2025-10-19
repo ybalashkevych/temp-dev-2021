@@ -56,6 +56,11 @@ fi
 
 # Create response directory
 WORK_DIR=$(dirname "$INSTRUCTIONS_FILE")
+
+# Convert to absolute paths to handle directory changes
+INSTRUCTIONS_FILE=$(cd "$(dirname "$INSTRUCTIONS_FILE")" && pwd)/$(basename "$INSTRUCTIONS_FILE")
+CONTEXT_FILE=$(cd "$(dirname "$CONTEXT_FILE")" && pwd)/$(basename "$CONTEXT_FILE")
+WORK_DIR=$(cd "$WORK_DIR" && pwd)
 RESPONSE_FILE="$WORK_DIR/agent-response.txt"
 
 log_msg INFO "Instructions: $INSTRUCTIONS_FILE"
@@ -88,16 +93,21 @@ if command -v cursor &> /dev/null; then
     log_msg INFO "Using model: $model"
     
     # Try cursor agent with print mode and instructions file
-    # Redirect output directly to response file (no tee to avoid timing issues)
-    if cursor agent --print --model "$model" --output-format text < "$INSTRUCTIONS_FILE" > "$RESPONSE_FILE" 2>&1; then
+    # Redirect output to temp file first
+    if cursor agent --print --model "$model" --output-format text < "$INSTRUCTIONS_FILE" > "${RESPONSE_FILE}.tmp" 2>&1; then
         cd "$original_dir"
-        # Validate response
-        if validate_response "$RESPONSE_FILE"; then
+        # Validate and wrap response
+        if validate_response "${RESPONSE_FILE}.tmp"; then
+            echo "SUCCESS: Cursor agent completed" > "$RESPONSE_FILE"
+            echo "" >> "$RESPONSE_FILE"
+            cat "${RESPONSE_FILE}.tmp" >> "$RESPONSE_FILE"
+            rm -f "${RESPONSE_FILE}.tmp"
             log_msg SUCCESS "Cursor agent completed successfully"
             cat "$RESPONSE_FILE"
             exit 0
         else
             log_msg WARNING "Cursor agent produced empty or invalid response"
+            rm -f "${RESPONSE_FILE}.tmp"
         fi
     else
         log_msg WARNING "Cursor agent invocation failed"
@@ -130,16 +140,21 @@ if command -v cursor &> /dev/null; then
     log_msg INFO "Using model: $model with combined prompt"
     
     # Try cursor agent with the combined prompt
-    # Redirect output directly to response file
-    if cursor agent --print --model "$model" --output-format text < "$combined_prompt" > "$RESPONSE_FILE" 2>&1; then
+    # Redirect output to temp file first
+    if cursor agent --print --model "$model" --output-format text < "$combined_prompt" > "${RESPONSE_FILE}.tmp" 2>&1; then
         cd "$original_dir"
-        # Validate response
-        if validate_response "$RESPONSE_FILE"; then
+        # Validate and wrap response
+        if validate_response "${RESPONSE_FILE}.tmp"; then
+            echo "SUCCESS: Cursor agent completed" > "$RESPONSE_FILE"
+            echo "" >> "$RESPONSE_FILE"
+            cat "${RESPONSE_FILE}.tmp" >> "$RESPONSE_FILE"
+            rm -f "${RESPONSE_FILE}.tmp"
             log_msg SUCCESS "Cursor agent completed successfully"
             cat "$RESPONSE_FILE"
             exit 0
         else
             log_msg WARNING "Cursor agent produced empty or invalid response"
+            rm -f "${RESPONSE_FILE}.tmp"
         fi
     else
         log_msg WARNING "Cursor agent with combined prompt failed"
