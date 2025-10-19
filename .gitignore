@@ -141,6 +141,9 @@ release_notes.md
 logs/*.log
 logs/*.error.log
 logs/*.pid
+logs/automation-state.json
+logs/pr-*-thread-*.json
+logs/.agent-context-*.md
 .cursor-feedback.txt
 .cursor-conflicts.txt
 

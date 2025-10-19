@@ -72,16 +72,24 @@ get_thread_conversation() {
     local comment_type=${4:-"review"}
     
     if [ "$comment_type" = "pr_comment" ]; then
-        # PR-level comment - just return it
-        gh api "repos/${repo}/issues/comments/${comment_id}" \
-            --jq '"\(.user.login): \(.body)"' 2>/dev/null
+        # Get ALL PR comments, filter bot status messages
+        gh api "repos/${repo}/issues/${pr_number}/comments?per_page=100" \
+            --jq '.[] | select(.body | contains("Working on this now") | not) |
+                  select(.body | contains("Made changes but tests") | not) |
+                  select(.body | contains("✅ Changes implemented") | not) |
+                  "\(.user.login): \(.body)"' \
+            2>/dev/null
     else
-        # Review comment - get parent and all replies
+        # Review thread - filter bot messages
         local parent_id=$(gh api "repos/${repo}/pulls/comments/${comment_id}" \
             --jq '.in_reply_to_id // .id' 2>/dev/null)
         
         gh api "repos/${repo}/pulls/${pr_number}/comments?per_page=100" \
-            --jq "[.[] | select(.id == ${parent_id} or .in_reply_to_id == ${parent_id})] | sort_by(.created_at) | .[] | \"\\(.user.login): \\(.body)\"" \
+            --jq "[.[] | select(.id == ${parent_id} or .in_reply_to_id == ${parent_id})] |
+                  map(select(.body | contains(\"Working on this now\") | not)) |
+                  map(select(.body | contains(\"Made changes but tests\") | not)) |
+                  sort_by(.created_at) | 
+                  .[] | \"\\(.user.login): \\(.body)\"" \
             2>/dev/null
     fi
 }
@@ -500,7 +508,7 @@ implement_changes() {
     log INFO "Implementing changes for PR #${pr_number}..."
     
     # Find the thread where implement was requested
-    local thread_info=$(find_command_thread "$pr_number" "$repo" "implement")
+    local thread_info=$(find_command_thread "$pr_number" "$repo" "implement" 2>/dev/null)
     
     if [ -z "$thread_info" ]; then
         log ERROR "Could not find '@ybalashkevych implement' command"
@@ -519,16 +527,15 @@ implement_changes() {
     # Get conversation context from this specific thread
     local conversation=$(get_thread_conversation "$pr_number" "$repo" "$comment_id" "$comment_type")
     
+    # Validate conversation was fetched
+    if [ -z "$conversation" ]; then
+        log ERROR "Failed to fetch conversation context"
+        conversation="[Previous discussion context unavailable]"
+    fi
+    
     log INFO "Implementing changes for thread in ${file_path}"
     
-    # Post "working on it" in the SAME THREAD
-    local working_msg="Working on this now..."
-    if [ "$comment_type" = "pr_comment" ]; then
-        gh pr comment "$pr_number" --repo "$repo" --body "$working_msg" || true
-    else
-        gh api "repos/${repo}/pulls/${pr_number}/comments" \
-            -X POST -F body="$working_msg" -F in_reply_to="$in_reply_to" 2>/dev/null || true
-    fi
+    # Don't post "Working on this now" - only post after successful commit
     
     # Create thread-specific implementation prompt
     local file_context=""
@@ -635,34 +642,86 @@ Changes made in response to discussion."
         fi
     fi
     
-    # Run tests
+    # Run tests with retry logic
     log INFO "Running tests..."
-    if xcodebuild test -scheme LiveAssistant -destination 'platform=macOS' &>/dev/null; then
-        log SUCCESS "All tests passing"
-    else
-        log ERROR "Tests failed"
-        local tests_failed_msg="⚠️ Made changes but tests are failing. Fixing now..."
-        if [ "$comment_type" = "pr_comment" ]; then
-            gh pr comment "$pr_number" --repo "$repo" --body "$tests_failed_msg"
+    local test_attempts=0
+    local max_test_attempts=10
+    
+    while [ $test_attempts -lt $max_test_attempts ]; do
+        if xcodebuild test -scheme LiveAssistant -destination 'platform=macOS' 2>&1 | tee /tmp/test-output.log | grep -q "Test session"; then
+            log SUCCESS "All tests passing"
+            break
         else
-            gh api "repos/${repo}/pulls/${pr_number}/comments" \
-                -X POST -F body="$tests_failed_msg" -F in_reply_to="$in_reply_to" 2>/dev/null
+            test_attempts=$((test_attempts + 1))
+            log WARNING "Tests failed (attempt ${test_attempts}/${max_test_attempts})"
+            
+            if [ $test_attempts -lt $max_test_attempts ]; then
+                # Try to fix test failures
+                local test_errors=$(cat /tmp/test-output.log | grep -A5 "error:" | head -20)
+                local fix_prompt="@Rules @Codebase
+
+Tests are failing. Analyze and fix these test errors:
+
+\`\`\`
+${test_errors}
+\`\`\`
+
+Fix the issues causing test failures. This is attempt ${test_attempts} of ${max_test_attempts}."
+                
+                log INFO "Attempting to fix test failures..."
+                if command -v cursor &> /dev/null; then
+                    cursor agent -p "$fix_prompt" 2>&1 | tee /tmp/cursor-fix-output.log
+                    
+                    # Commit the fixes
+                    if ! git diff --quiet; then
+                        git add -A
+                        git commit -m "fix: address test failures (attempt ${test_attempts})" --no-verify
+                    fi
+                else
+                    break
+                fi
+            else
+                # Max attempts reached - abort and notify
+                log ERROR "Failed to fix tests after ${max_test_attempts} attempts"
+                local failure_msg="❌ Unable to fix test failures after ${max_test_attempts} attempts. Manual intervention required.
+
+Please review the changes and fix the failing tests manually. The daemon has been stopped for this PR."
+                
+                if [ "$comment_type" = "pr_comment" ]; then
+                    gh pr comment "$pr_number" --repo "$repo" --body "$failure_msg"
+                else
+                    gh api "repos/${repo}/pulls/${pr_number}/comments" \
+                        -X POST -F body="$failure_msg" -F in_reply_to="$in_reply_to" 2>/dev/null
+                fi
+                
+                # Abort without pushing
+                return 1
+            fi
         fi
-        return 1
-    fi
+    done
     
     # Push changes
     log INFO "Pushing changes..."
     if git push origin "$current_branch"; then
         log SUCCESS "Changes pushed"
         
-        # Post completion comment in thread
+        # Post completion comment in thread with detailed summary
         local commits=$(git log origin/$MAIN_BRANCH..HEAD --oneline --no-decorate | head -5)
+        local files_changed=$(git diff origin/$MAIN_BRANCH..HEAD --name-only | head -10)
+        local stats=$(git diff origin/$MAIN_BRANCH..HEAD --shortstat)
+        
         local success_msg="✅ Changes implemented and pushed.
 
-Recent commits:
+**Files Modified**:
 \`\`\`
-$commits
+${files_changed}
+\`\`\`
+
+**Summary**: ${stats}
+
+**Recent Commits**:
+\`\`\`
+${commits}
 \`\`\`
 
 All tests passing. Ready for review!"

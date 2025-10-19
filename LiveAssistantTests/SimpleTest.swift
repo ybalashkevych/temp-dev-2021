@@ -18,7 +18,7 @@ struct SimpleTest {
     func testBasicFunctionality() {
         #expect(true)
     }
-    
+
     @Test
     func testStringComparison() {
         let str1 = "Hello"

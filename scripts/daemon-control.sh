@@ -8,7 +8,7 @@
 # Usage: ./scripts/daemon-control.sh {start|stop|status|restart}
 #
 
-DAEMON_SCRIPT="./scripts/cursor-daemon.sh"
+DAEMON_SCRIPT="./scripts/automation/daemon.sh"
 LOG_DIR="logs"
 PID_FILE="${LOG_DIR}/cursor-daemon.pid"
 

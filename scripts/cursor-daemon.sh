@@ -244,25 +244,25 @@ handle_command() {
             if ./scripts/cursor-respond-interactive.sh implement "$pr_number" "${REPO_OWNER}/${REPO_NAME}" >> "$LOG_DIR/pr-${pr_number}-implement.log" 2>&1; then
                 log SUCCESS "Implementation completed for PR #${pr_number}"
                 
-                # Mark command as processed
-                mark_command_processed "$comment_id" "$comment_type"
-                
                 # Remove awaiting-response label
                 gh pr edit "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
                     --remove-label "awaiting-response" 2>/dev/null || true
             else
                 log ERROR "Implementation failed"
             fi
+            
+            # ALWAYS mark command as processed (success or failure) to prevent infinite loops
+            mark_command_processed "$comment_id" "$comment_type"
             ;;
         plan)
             if ./scripts/cursor-respond-interactive.sh plan "$pr_number" "${REPO_OWNER}/${REPO_NAME}" >> "$LOG_DIR/pr-${pr_number}-plan.log" 2>&1; then
                 log SUCCESS "Posted implementation plan"
-                
-                # Mark command as processed (important for plan to avoid re-posting)
-                mark_command_processed "$comment_id" "$comment_type"
             else
                 log ERROR "Failed to post plan"
             fi
+            
+            # ALWAYS mark command as processed (success or failure) to prevent infinite loops
+            mark_command_processed "$comment_id" "$comment_type"
             ;;
     esac
 }

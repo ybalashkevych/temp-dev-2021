@@ -69,12 +69,12 @@ struct ItemRepositoryTests {
         // Arrange
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: Item.self, configurations: config)
-        
+
         // Create a single shared context for this test
         let context = ModelContext(container)
         let item1 = Item(timestamp: Date())
         let item2 = Item(timestamp: Date().addingTimeInterval(100))
-        
+
         context.insert(item1)
         context.insert(item2)
         try context.save()
