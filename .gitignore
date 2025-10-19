@@ -145,6 +145,7 @@ logs/automation-state.json
 logs/pr-*-thread-*.json
 logs/.agent-context-*.md
 logs/.agent-work-*/
+logs/comments/
 .cursor-feedback.txt
 .cursor-conflicts.txt
 

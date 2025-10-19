@@ -86,6 +86,7 @@ All in `logs/` (gitignored):
 - `pr-{N}-thread-{T}.json` - Thread conversation history
 - `.agent-work-{T}/` - Agent work directory with instructions, logs
 - `pr-{N}-monitor.log` - Monitoring logs
+- `comments/pr-{N}-{ID}.txt` - Comment bodies cache (persisted for debugging)
 
 ## Cursor Invocation
 
@@ -111,6 +112,15 @@ REPO_OWNER="ybalashkevych"
 REPO_NAME="temp-dev-2021"
 POLL_INTERVAL=60  # seconds
 ```
+
+Environment variables:
+```bash
+MOCK_AGENT=1         # Enable mock mode (no real Cursor invocation)
+CURSOR_MODEL=...     # Override Cursor model (default: claude-4.5-sonnet)
+DEBUG=1              # Enable debug logging
+```
+
+Note: Work directories are always preserved in `logs/.agent-work-*/` for debugging.
 
 ## Troubleshooting
 

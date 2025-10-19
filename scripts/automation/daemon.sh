@@ -107,32 +107,66 @@ add_reaction() {
         api_endpoint="repos/${REPO_OWNER}/${REPO_NAME}/pulls/comments/${comment_id}/reactions"
     fi
     
-    gh api "$api_endpoint" -X POST -F content="$reaction" 2>/dev/null || {
-        log_msg WARNING "Failed to add $reaction reaction to comment $comment_id"
+    # Use lowercase -f flag to avoid +1 being interpreted as number
+    # Also capture error output for better debugging
+    local error_output=$(gh api "$api_endpoint" -X POST -f content="$reaction" 2>&1)
+    
+    if [ $? -ne 0 ]; then
+        log_msg WARNING "Failed to add $reaction reaction to comment $comment_id: $error_output"
         return 1
-    }
+    fi
     
     log_msg DEBUG "Added $reaction reaction to comment $comment_id"
     return 0
+}
+
+# Ensure comments cache directory exists
+ensure_comments_cache() {
+    mkdir -p "$LOG_DIR/comments"
 }
 
 # Get PR-level comments (excludes resolved conversations)
 get_pr_comments() {
     local pr_number=$1
     
+    ensure_comments_cache
+    
+    # Fetch comments with base64-encoded bodies to prevent line splitting
     gh api "repos/${REPO_OWNER}/${REPO_NAME}/issues/${pr_number}/comments" \
         --jq '.[] | select(.performed_via_github_app == null or .performed_via_github_app == false) | 
-              "\(.id)|issue|\(.user.login)|\(.body)"' 2>/dev/null || echo ""
+              "\(.id)|\(.user.login)|\(.body | @base64)"' 2>/dev/null | \
+    while IFS='|' read -r id user body_b64; do
+        if [ -n "$id" ]; then
+            # Decode body and write to file
+            local body=$(echo "$body_b64" | base64 --decode 2>/dev/null || echo "")
+            local body_file="$LOG_DIR/comments/pr-${pr_number}-${id}.txt"
+            echo "$body" > "$body_file"
+            # Output metadata with file path
+            echo "${id}|issue|${user}|${body_file}"
+        fi
+    done || echo ""
 }
 
 # Get inline review comments (excludes resolved, includes only top-level not replies)
 get_review_comments() {
     local pr_number=$1
     
-    # Get review comments that are not replies (in_reply_to_id is null)
+    ensure_comments_cache
+    
+    # Get review comments with base64-encoded bodies to prevent line splitting
     gh api "repos/${REPO_OWNER}/${REPO_NAME}/pulls/${pr_number}/comments" \
         --jq '.[] | select(.in_reply_to_id == null) | 
-              "\(.id)|review|\(.user.login)|\(.path):\(.line // .original_line)|\(.body)"' 2>/dev/null || echo ""
+              "\(.id)|\(.user.login)|\(.path):\(.line // .original_line)|\(.body | @base64)"' 2>/dev/null | \
+    while IFS='|' read -r id user location body_b64; do
+        if [ -n "$id" ]; then
+            # Decode body and write to file
+            local body=$(echo "$body_b64" | base64 --decode 2>/dev/null || echo "")
+            local body_file="$LOG_DIR/comments/pr-${pr_number}-${id}.txt"
+            echo "$body" > "$body_file"
+            # Output metadata with file path
+            echo "${id}|review|${user}|${location}|${body_file}"
+        fi
+    done || echo ""
 }
 
 # Check if conversation thread is resolved
@@ -208,10 +242,13 @@ get_pr_feedback() {
     # Get PR comments
     local pr_comments=$(get_pr_comments "$pr_number")
     if [ -n "$pr_comments" ]; then
-        while IFS='|' read -r comment_id type author body; do
+        while IFS='|' read -r comment_id type author body_file; do
             if [ -z "$comment_id" ]; then
                 continue
             fi
+            
+            # Read body from file
+            local body=$(cat "$body_file" 2>/dev/null || echo "")
             
             # Skip if already fully processed (has both reactions)
             if has_processed_reactions "$comment_id" "$type"; then
@@ -232,10 +269,13 @@ get_pr_feedback() {
     # Get review comments
     local review_comments=$(get_review_comments "$pr_number")
     if [ -n "$review_comments" ]; then
-        while IFS='|' read -r comment_id type author file_line body; do
+        while IFS='|' read -r comment_id type author file_line body_file; do
             if [ -z "$comment_id" ]; then
                 continue
             fi
+            
+            # Read body from file
+            local body=$(cat "$body_file" 2>/dev/null || echo "")
             
             # Skip if already fully processed
             if has_processed_reactions "$comment_id" "$type"; then
@@ -301,14 +341,23 @@ process_feedback() {
         # Step 6: Add agent response to thread
         add_to_thread "$thread_id" "assistant" "cursor-agent" "$response" ""
         
-        # Step 7: Post response to PR
-        post_agent_response "$pr_number" "$comment_id" "$comment_type" "$command" "$response"
+        # Step 7: Post response to PR and get new comment ID
+        local agent_comment_id=$(post_agent_response "$pr_number" "$comment_id" "$comment_type" "$command" "$response")
         
-        # Step 8: Add 🚀 reaction (marks as agent responded)
-        add_reaction "$comment_id" "$comment_type" "rocket"
-        
-        # Step 9: Add ✅ reaction (success)
-        add_reaction "$comment_id" "$comment_type" "+1"
+        if [ -n "$agent_comment_id" ]; then
+            log_msg INFO "Agent posted comment: $agent_comment_id" | tee -a "$log_file"
+            
+            # Step 8: Add 🚀 reaction to AGENT's comment (not original)
+            add_reaction "$agent_comment_id" "issue" "rocket"
+            
+            # Step 9: Add ✅ reaction to AGENT's comment
+            add_reaction "$agent_comment_id" "issue" "+1"
+            
+            # Also add eyes reaction to original comment to mark as processed
+            add_reaction "$comment_id" "$comment_type" "eyes"
+        else
+            log_msg WARNING "Could not get agent comment ID, skipping reactions" | tee -a "$log_file"
+        fi
     else
         log_msg ERROR "Agent failed to process feedback" | tee -a "$log_file"
         
@@ -326,14 +375,26 @@ post_comment() {
     local pr_number=$1
     local message=$2
     
-    gh pr comment "$pr_number" \
+    # Post comment and capture the response with comment URL
+    local comment_url=$(gh pr comment "$pr_number" \
         --repo "${REPO_OWNER}/${REPO_NAME}" \
-        --body "$message" 2>/dev/null || {
-        log_msg ERROR "Failed to post comment to PR #${pr_number}"
-        return 1
-    }
+        --body "$message" 2>&1)
     
-    return 0
+    if [ $? -ne 0 ]; then
+        log_msg ERROR "Failed to post comment to PR #${pr_number}: $comment_url"
+        return 1
+    fi
+    
+    # Extract comment ID from URL (format: https://github.com/.../pull/5#issuecomment-123456)
+    local comment_id=$(echo "$comment_url" | grep -oE '#issuecomment-[0-9]+' | grep -oE '[0-9]+')
+    
+    if [ -n "$comment_id" ]; then
+        echo "$comment_id"
+        return 0
+    else
+        log_msg WARNING "Could not extract comment ID from: $comment_url"
+        return 1
+    fi
 }
 
 # Post agent response based on mode
@@ -358,6 +419,7 @@ post_agent_response() {
             ;;
     esac
     
+    # Post comment and return the new comment ID
     post_comment "$pr_number" "$message"
 }
 
