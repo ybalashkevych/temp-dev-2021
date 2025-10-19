@@ -102,30 +102,96 @@ has_unresolved_comments() {
     return 1  # No comments
 }
 
-# Check for @ybalashkevych commands in PR comments
+# Mark a command as processed by adding a reaction
+mark_command_processed() {
+    local comment_id=$1
+    local comment_type=$2  # "issue" or "pull_request_review"
+    
+    if [ -z "$comment_id" ]; then
+        log WARNING "No comment ID provided to mark as processed"
+        return 1
+    fi
+    
+    # Validate that comment_id is numeric
+    if ! [[ "$comment_id" =~ ^[0-9]+$ ]]; then
+        log ERROR "Invalid comment ID (not numeric): ${comment_id}"
+        return 1
+    fi
+    
+    local api_endpoint
+    if [ "$comment_type" = "issue" ]; then
+        api_endpoint="repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${comment_id}/reactions"
+    else
+        api_endpoint="repos/${REPO_OWNER}/${REPO_NAME}/pulls/comments/${comment_id}/reactions"
+    fi
+    
+    log INFO "Adding reaction to ${comment_type} comment ID: ${comment_id}"
+    
+    local error_output
+    error_output=$(gh api "$api_endpoint" -X POST -F content="eyes" 2>&1)
+    
+    if [ $? -eq 0 ]; then
+        log SUCCESS "Marked command as processed (added 👀 reaction)"
+        return 0
+    else
+        log ERROR "Failed to add reaction to comment ${comment_id}"
+        log ERROR "API response: ${error_output}"
+        return 1
+    fi
+}
+
+# Check for @ybalashkevych commands in PR comments (returns: comment_id|command_type|comment_type)
 check_for_commands() {
     local pr_number=$1
     
-    # Get recent PR-level comments (last 5)
-    local pr_comments=$(gh pr view "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-        --json comments --jq '.comments[-5:] | .[] | .body' 2>/dev/null)
+    # Get recent PR-level comments (last 5) without reactions - ID only
+    local pr_comment_id=$(gh api "repos/${REPO_OWNER}/${REPO_NAME}/issues/${pr_number}/comments?per_page=5" \
+        --jq '.[-5:] | .[] | select(.reactions.total_count == 0) | select(.body | contains("@ybalashkevych")) | .id' \
+        2>/dev/null | tail -1)
     
-    # Get recent inline review comments (last 50)
-    local inline_comments=$(gh api "repos/${REPO_OWNER}/${REPO_NAME}/pulls/${pr_number}/comments?per_page=50" \
-        --jq '.[-50:] | .[] | .body' 2>/dev/null)
+    # Get recent inline review comments (last 50) without reactions - ID only
+    local inline_comment_id=$(gh api "repos/${REPO_OWNER}/${REPO_NAME}/pulls/${pr_number}/comments?per_page=50" \
+        --jq '.[-50:] | .[] | select(.reactions.total_count == 0) | select(.body | contains("@ybalashkevych")) | .id' \
+        2>/dev/null | tail -1)
     
-    # Combine both types of comments
-    local all_comments=$(echo -e "${pr_comments}\n${inline_comments}")
+    # Process PR-level command first (if found)
+    if [ -n "$pr_comment_id" ]; then
+        # Fetch the comment body separately
+        local comment_body=$(gh api "repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${pr_comment_id}" \
+            --jq '.body' 2>/dev/null)
+        
+        if [ -n "$comment_body" ]; then
+            if echo "$comment_body" | grep -q "@ybalashkevych implement"; then
+                echo "${pr_comment_id}|implement|issue"
+                return 0
+            elif echo "$comment_body" | grep -q "@ybalashkevych fix"; then
+                echo "${pr_comment_id}|fix|issue"
+                return 0
+            elif echo "$comment_body" | grep -q "@ybalashkevych plan"; then
+                echo "${pr_comment_id}|plan|issue"
+                return 0
+            fi
+        fi
+    fi
     
-    if echo "$all_comments" | grep -q "@ybalashkevych implement"; then
-        log INFO "Found '@ybalashkevych implement' command"
-        return 0
-    elif echo "$all_comments" | grep -q "@ybalashkevych fix"; then
-        log INFO "Found '@ybalashkevych fix' command"
-        return 0
-    elif echo "$all_comments" | grep -q "@ybalashkevych plan"; then
-        log INFO "Found '@ybalashkevych plan' command"
-        return 2
+    # Process inline command (if found and no PR-level command)
+    if [ -n "$inline_comment_id" ]; then
+        # Fetch the comment body separately
+        local comment_body=$(gh api "repos/${REPO_OWNER}/${REPO_NAME}/pulls/comments/${inline_comment_id}" \
+            --jq '.body' 2>/dev/null)
+        
+        if [ -n "$comment_body" ]; then
+            if echo "$comment_body" | grep -q "@ybalashkevych implement"; then
+                echo "${inline_comment_id}|implement|pull_request_review"
+                return 0
+            elif echo "$comment_body" | grep -q "@ybalashkevych fix"; then
+                echo "${inline_comment_id}|fix|pull_request_review"
+                return 0
+            elif echo "$comment_body" | grep -q "@ybalashkevych plan"; then
+                echo "${inline_comment_id}|plan|pull_request_review"
+                return 0
+            fi
+        fi
     fi
     
     return 1
@@ -168,13 +234,20 @@ process_pr() {
 handle_command() {
     local pr_number=$1
     local command_type=$2
+    local comment_id=$3
+    local comment_type=$4
     
-    log INFO "Executing command for PR #${pr_number}: $command_type"
+    log INFO "Executing command for PR #${pr_number}: $command_type (comment: ${comment_id})"
     
     case "$command_type" in
         implement|fix)
             if ./scripts/cursor-respond-interactive.sh implement "$pr_number" "${REPO_OWNER}/${REPO_NAME}" >> "$LOG_DIR/pr-${pr_number}-implement.log" 2>&1; then
                 log SUCCESS "Implementation completed for PR #${pr_number}"
+                
+                # Mark command as processed
+                mark_command_processed "$comment_id" "$comment_type"
+                
+                # Remove awaiting-response label
                 gh pr edit "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
                     --remove-label "awaiting-response" 2>/dev/null || true
             else
@@ -184,6 +257,9 @@ handle_command() {
         plan)
             if ./scripts/cursor-respond-interactive.sh plan "$pr_number" "${REPO_OWNER}/${REPO_NAME}" >> "$LOG_DIR/pr-${pr_number}-plan.log" 2>&1; then
                 log SUCCESS "Posted implementation plan"
+                
+                # Mark command as processed (important for plan to avoid re-posting)
+                mark_command_processed "$comment_id" "$comment_type"
             else
                 log ERROR "Failed to post plan"
             fi
@@ -248,18 +324,17 @@ monitor_prs() {
         if [ -n "$awaiting_prs" ]; then
             echo "$awaiting_prs" | while read -r pr_number; do
                 if [ -n "$pr_number" ]; then
-                    check_for_commands "$pr_number"
-                    local cmd_type=$?
-                    if [ "$cmd_type" -ne 1 ]; then
-                        # Found a command (0 = implement, 2 = plan)
-                        case $cmd_type in
-                            0)
-                                handle_command "$pr_number" "implement"
-                                ;;
-                            2)
-                                handle_command "$pr_number" "plan"
-                                ;;
-                        esac
+                    # Check for commands (returns: comment_id|command_type|comment_type)
+                    local command_data=$(check_for_commands "$pr_number")
+                    
+                    if [ -n "$command_data" ]; then
+                        # Parse command data
+                        local comment_id=$(echo "$command_data" | cut -d'|' -f1)
+                        local command_type=$(echo "$command_data" | cut -d'|' -f2)
+                        local comment_type=$(echo "$command_data" | cut -d'|' -f3)
+                        
+                        log INFO "Found command '$command_type' in PR #${pr_number} (comment: ${comment_id})"
+                        handle_command "$pr_number" "$command_type" "$comment_id" "$comment_type"
                     fi
                 fi
             done

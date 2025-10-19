@@ -14,163 +14,97 @@ import Testing
 /// Tests for TranscriptionRepository.
 @Suite
 struct TranscriptionRepositoryTests {
-    // MARK: - Start/Stop Microphone Tests
-
-    @Test
-    func startMicrophoneCreatesSession() async throws {
-        // Arrange
+    // MARK: - Helper Methods
+    
+    private func createRepository() -> (TranscriptionRepository, MockMicrophoneAudioService, MockSystemAudioService, MockTranscriptionService, MockTextAnalysisService) {
         let mockMicService = MockMicrophoneAudioService()
         let mockSystemService = MockSystemAudioService()
         let mockTranscriptionService = MockTranscriptionService()
         let mockTextAnalysisService = MockTextAnalysisService()
-
+        
         let repository = TranscriptionRepository(
             microphoneService: mockMicService,
             systemAudioService: mockSystemService,
             transcriptionService: mockTranscriptionService,
             textAnalysisService: mockTextAnalysisService
         )
+        
+        return (repository, mockMicService, mockSystemService, mockTranscriptionService, mockTextAnalysisService)
+    }
 
-        // Act
+    // MARK: - Microphone Tests
+
+    @Test
+    func startMicrophoneCreatesSession() async throws {
+        let (repository, mockMic, _, mockTranscription, _) = createRepository()
+        
         try await repository.startMicrophone()
-
-        // Assert
+        
         let session = await repository.getCurrentSession()
         #expect(session != nil)
         #expect(session?.activeSources.contains(.microphone) == true)
-        #expect(mockMicService.startCaptureCallCount == 1)
-        #expect(mockTranscriptionService.startTranscriptionCallCount == 1)
+        #expect(mockMic.startCaptureCallCount == 1)
+        #expect(mockTranscription.startTranscriptionCallCount == 1)
     }
 
     @Test
     func stopMicrophoneStopsServices() async throws {
-        // Arrange
-        let mockMicService = MockMicrophoneAudioService()
-        let mockSystemService = MockSystemAudioService()
-        let mockTranscriptionService = MockTranscriptionService()
-        let mockTextAnalysisService = MockTextAnalysisService()
-
-        let repository = TranscriptionRepository(
-            microphoneService: mockMicService,
-            systemAudioService: mockSystemService,
-            transcriptionService: mockTranscriptionService,
-            textAnalysisService: mockTextAnalysisService
-        )
-
+        let (repository, mockMic, _, mockTranscription, _) = createRepository()
+        
         try await repository.startMicrophone()
-
-        // Act
         await repository.stopMicrophone()
-
-        // Assert
-        #expect(mockMicService.stopCaptureCallCount == 1)
-        #expect(mockTranscriptionService.stopTranscriptionCallCount == 1)
+        
+        #expect(mockMic.stopCaptureCallCount == 1)
+        #expect(mockTranscription.stopTranscriptionCallCount == 1)
     }
 
-    // MARK: - Start/Stop System Audio Tests
+    // MARK: - System Audio Tests
 
     @Test
     func startSystemAudioCreatesSession() async throws {
-        // Arrange
-        let mockMicService = MockMicrophoneAudioService()
-        let mockSystemService = MockSystemAudioService()
-        let mockTranscriptionService = MockTranscriptionService()
-        let mockTextAnalysisService = MockTextAnalysisService()
-
-        let repository = TranscriptionRepository(
-            microphoneService: mockMicService,
-            systemAudioService: mockSystemService,
-            transcriptionService: mockTranscriptionService,
-            textAnalysisService: mockTextAnalysisService
-        )
-
-        // Act
+        let (repository, _, mockSystem, _, _) = createRepository()
+        
         try await repository.startSystemAudio()
-
-        // Assert
+        
         let session = await repository.getCurrentSession()
         #expect(session != nil)
         #expect(session?.activeSources.contains(.systemAudio) == true)
-        #expect(mockSystemService.startCaptureCallCount == 1)
+        #expect(mockSystem.startCaptureCallCount == 1)
     }
 
     @Test
     func stopSystemAudioStopsServices() async throws {
-        // Arrange
-        let mockMicService = MockMicrophoneAudioService()
-        let mockSystemService = MockSystemAudioService()
-        let mockTranscriptionService = MockTranscriptionService()
-        let mockTextAnalysisService = MockTextAnalysisService()
-
-        let repository = TranscriptionRepository(
-            microphoneService: mockMicService,
-            systemAudioService: mockSystemService,
-            transcriptionService: mockTranscriptionService,
-            textAnalysisService: mockTextAnalysisService
-        )
-
+        let (repository, _, mockSystem, _, _) = createRepository()
+        
         try await repository.startSystemAudio()
-
-        // Act
         await repository.stopSystemAudio()
-
-        // Assert
-        #expect(mockSystemService.stopCaptureCallCount == 1)
+        
+        #expect(mockSystem.stopCaptureCallCount == 1)
     }
 
-    // MARK: - Clear Session Tests
+    // MARK: - Session Management Tests
 
     @Test
     func clearSessionRemovesData() async throws {
-        // Arrange
-        let mockMicService = MockMicrophoneAudioService()
-        let mockSystemService = MockSystemAudioService()
-        let mockTranscriptionService = MockTranscriptionService()
-        let mockTextAnalysisService = MockTextAnalysisService()
-
-        let repository = TranscriptionRepository(
-            microphoneService: mockMicService,
-            systemAudioService: mockSystemService,
-            transcriptionService: mockTranscriptionService,
-            textAnalysisService: mockTextAnalysisService
-        )
-
+        let (repository, _, _, _, _) = createRepository()
+        
         try await repository.startMicrophone()
-
-        // Act
         await repository.clearSession()
-
-        // Assert
+        
         let session = await repository.getCurrentSession()
         #expect(session == nil)
     }
 
-    // MARK: - Stop All Tests
-
     @Test
     func stopAllStopsAllServices() async throws {
-        // Arrange
-        let mockMicService = MockMicrophoneAudioService()
-        let mockSystemService = MockSystemAudioService()
-        let mockTranscriptionService = MockTranscriptionService()
-        let mockTextAnalysisService = MockTextAnalysisService()
-
-        let repository = TranscriptionRepository(
-            microphoneService: mockMicService,
-            systemAudioService: mockSystemService,
-            transcriptionService: mockTranscriptionService,
-            textAnalysisService: mockTextAnalysisService
-        )
-
+        let (repository, mockMic, mockSystem, _, _) = createRepository()
+        
         try await repository.startMicrophone()
         try await repository.startSystemAudio()
-
-        // Act
         await repository.stopAll()
-
-        // Assert
-        #expect(mockMicService.stopCaptureCallCount == 1)
-        #expect(mockSystemService.stopCaptureCallCount == 1)
+        
+        #expect(mockMic.stopCaptureCallCount == 1)
+        #expect(mockSystem.stopCaptureCallCount == 1)
     }
 }
 
