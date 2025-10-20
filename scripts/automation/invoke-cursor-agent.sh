@@ -162,8 +162,8 @@ if command -v cursor &> /dev/null; then
     fi
 fi
 
-# Method 3: Interactive mode - open instructions in cursor
-log_msg INFO "Opening instructions in cursor for manual processing..."
+# Method 3: Interactive mode - manual invocation required
+log_msg INFO "Manual cursor agent invocation required..."
 log_msg INFO ""
 log_msg INFO "=========================================="
 log_msg INFO "MANUAL CURSOR AGENT INVOCATION REQUIRED"
@@ -174,7 +174,7 @@ log_msg INFO "Context file: $CONTEXT_FILE"
 log_msg INFO "Work directory: $WORK_DIR"
 log_msg INFO ""
 log_msg INFO "Please:"
-log_msg INFO "1. Open the work directory in Cursor: cursor $WORK_DIR"
+log_msg INFO "1. Open the work directory in Cursor manually: cursor $WORK_DIR"
 log_msg INFO "2. Read the instructions file: $INSTRUCTIONS_FILE"
 log_msg INFO "3. Read the context file: $CONTEXT_FILE"
 log_msg INFO "4. Follow the workflow described in the instructions"
@@ -186,11 +186,9 @@ log_msg INFO "  For failure: 'FAILURE: <reason>'"
 log_msg INFO ""
 log_msg INFO "=========================================="
 
-# Open work directory in cursor if possible
-if command -v cursor &> /dev/null; then
-    log_msg INFO "Opening work directory in Cursor..."
-    cursor "$WORK_DIR" &
-fi
+# DO NOT automatically open cursor - let user open manually when ready
+# This prevents unwanted interruptions and gives user control over when to engage
+# Removed: cursor "$WORK_DIR" &
 
 # Create pending response
 echo "PENDING_MANUAL_INVOCATION" > "$RESPONSE_FILE"
