@@ -38,16 +38,28 @@ gh pr create --title "feat: add dark mode support" --body "Description..."
 
 ## Background Monitoring (Optional)
 
-For automatic PR monitoring, run the cursor daemon:
+For automatic PR monitoring, run the cursor daemon (Python implementation):
 
 ```bash
-./scripts/daemon-control.sh start
+# Start the daemon
+cd scripts/automation
+cursor-daemon daemon
+
+# Or with custom settings
+cursor-daemon daemon --poll-interval 30 --log-file logs/daemon.log
 ```
 
 The daemon will:
 - Check for new PR comments every 60 seconds
 - Post analysis as @ybalashkevych
 - Wait for `@ybalashkevych implement` or `@ybalashkevych plan` commands
+
+**Legacy Bash Version** (deprecated):
+```bash
+./scripts/daemon-control.sh start
+```
+
+See [scripts/automation/README.md](scripts/automation/README.md) for full automation documentation.
 - Execute implementation when requested
 
 **Control commands:**

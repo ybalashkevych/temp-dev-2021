@@ -137,17 +137,22 @@ swiftformat-output.txt
 pr-comment.md
 release_notes.md
 
+# Python (for automation scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+*.egg
+
 # Background Automation
-logs/*.log
-logs/*.error.log
-logs/*.pid
-logs/automation-state.json
-logs/pr-*-thread-*.json
-logs/.agent-context-*.md
-logs/.agent-work-*/
-logs/comments/
-.cursor-feedback.txt
-.cursor-conflicts.txt
+# Note: Root logs/ is unused; actual logs are in scripts/automation/logs/ (with own .gitignore)
+logs/
+
+
 
 # App specific
 # Add any app-specific files or directories to ignore
