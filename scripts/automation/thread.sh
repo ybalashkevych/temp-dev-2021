@@ -21,6 +21,38 @@ if ! command -v log_msg &> /dev/null; then
     fi
 fi
 
+# Get session ID for thread
+get_session_id() {
+    local thread_id=$1
+    local log_dir_path="${LOG_DIR:-logs}"
+    local thread_file="$log_dir_path/${thread_id}.json"
+    
+    if [ ! -f "$thread_file" ]; then
+        echo ""
+        return 1
+    fi
+    
+    jq -r '.cursor_session_id // ""' "$thread_file" 2>/dev/null || echo ""
+}
+
+# Store session ID for thread
+store_session_id() {
+    local thread_id=$1
+    local session_id=$2
+    local log_dir_path="${LOG_DIR:-logs}"
+    local thread_file="$log_dir_path/${thread_id}.json"
+    
+    if [ ! -f "$thread_file" ]; then
+        log_msg ERROR "Thread file not found: $thread_file"
+        return 1
+    fi
+    
+    jq ".cursor_session_id = \"${session_id}\"" "$thread_file" > "${thread_file}.tmp" && \
+        mv "${thread_file}.tmp" "$thread_file"
+    
+    log_msg DEBUG "Stored session ID for thread $thread_id: $session_id"
+}
+
 # Get or create thread for a comment
 get_or_create_thread() {
     local pr_number=$1
@@ -50,6 +82,7 @@ get_or_create_thread() {
 {
   "thread_id": "${thread_id}",
   "pr_number": ${pr_number},
+  "cursor_session_id": "",
   "created_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
   "status": "active",
   "messages": []
@@ -133,8 +166,8 @@ add_to_thread() {
     log_msg DEBUG "Added message to thread $thread_id from $author"
 }
 
-# Build full context for agent
-build_agent_context() {
+# Build full context for agent (simplified)
+build_context() {
     local pr_number=$1
     local thread_id=$2
     
@@ -146,101 +179,39 @@ build_agent_context() {
         return 1
     fi
     
-    # Get PR metadata
-    local pr_title=$(gh pr view "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-        --json title --jq '.title' 2>/dev/null || echo "Unknown")
-    local pr_branch=$(gh pr view "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-        --json headRefName --jq '.headRefName' 2>/dev/null || echo "unknown")
-    local pr_body=$(gh pr view "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-        --json body --jq '.body' 2>/dev/null || echo "")
+    # Get PR metadata in one call
+    local pr_data=$(gh pr view "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
+        --json title,headRefName,body,files 2>/dev/null)
     
-    # Get linked issue if any (provides original requirements/context)
-    local issue_number=$(gh pr view "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-        --json body --jq '.body' 2>/dev/null | grep -oE '#[0-9]+' | head -1 | tr -d '#' || echo "")
-    local issue_body=""
-    local issue_title=""
-    local has_issue_context=false
-    
-    if [ -n "$issue_number" ]; then
-        issue_title=$(gh issue view "$issue_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-            --json title --jq '.title' 2>/dev/null || echo "")
-        issue_body=$(gh issue view "$issue_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-            --json body --jq '.body' 2>/dev/null || echo "")
-        
-        # Validate issue has meaningful content
-        if [ -n "$issue_body" ] && [ "$issue_body" != "null" ] && [ "${#issue_body}" -gt 10 ]; then
-            has_issue_context=true
-        fi
-    fi
-    
-    # Get changed files
-    local changed_files=$(gh pr view "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
-        --json files --jq '.files[].path' 2>/dev/null | head -20 | tr '\n' ', ' | sed 's/,$//')
+    local pr_title=$(echo "$pr_data" | jq -r '.title // "Unknown"')
+    local pr_branch=$(echo "$pr_data" | jq -r '.headRefName // "unknown"')
+    local pr_body=$(echo "$pr_data" | jq -r '.body // ""')
+    local changed_files=$(echo "$pr_data" | jq -r '.files[].path' | head -20 | tr '\n' ', ' | sed 's/,$//')
     
     # Build context document
-    local context="# Agent Context for PR #${pr_number}
+    cat <<EOF
+# Agent Context for PR #${pr_number}
 
 ## 1. PR Metadata
 - **Title**: ${pr_title}
 - **Branch**: ${pr_branch}
 - **Files Changed**: ${changed_files}
 
-## 2. Requirements & Background
+## 2. PR Description
+${pr_body:-_No description provided_}
 
-"
-    
-    # Prioritize linked issue description over PR body
-    if [ "$has_issue_context" = true ]; then
-        # Use issue as primary context
-        context="${context}### Linked Issue #${issue_number}: ${issue_title}
-
-${issue_body}
-
-"
-        log_msg DEBUG "Using linked issue #${issue_number} as primary context"
-    else
-        # Fallback to PR body
-        if [ -n "$pr_body" ] && [ "$pr_body" != "null" ]; then
-            context="${context}### PR Description
-
-${pr_body}
-
-"
-            log_msg DEBUG "Using PR body as primary context (no linked issue)"
-        else
-            context="${context}### Description
-
-_No description provided in PR or linked issue_
-
-"
-            log_msg WARNING "No context found in PR body or linked issue"
-        fi
-    fi
-    
-    context="${context}
 ---
 
-## 3. Review Conversation & Code Context
+## 3. Review Conversation
 
-"
+EOF
     
-    # Add all messages from thread
-    local messages=$(jq -r '.messages[] | 
+    # Add all messages from thread with simplified formatting
+    jq -r '.messages[] | 
         "### \(.role | ascii_upcase) (\(.author)) - \(.timestamp)\n" +
-        (if .location != "" then 
-            "**Location**: `\(.location)`" + 
-            (if .function_name != "" then " in `\(.function_name)`" else "" end) + 
-            "\n\n" 
-        else "" end) +
-        (if .code_snippet != "" then 
-            "**Code at location:**\n```\n\(.code_snippet)\n```\n\n" 
-        else "" end) +
-        (if .location != "" then "**Comment:** " else "" end) +
-        "\(.content)\n"' "$thread_file" 2>/dev/null)
-    
-    context="${context}${messages}"
-    
-    echo "$context"
+        (if .location != "" then "**Location**: `\(.location)`\n\n" else "" end) +
+        (if .code_snippet != "" then "```\n\(.code_snippet)\n```\n\n" else "" end) +
+        "\(.content)\n"' "$thread_file" 2>/dev/null
 }
 
 # Get thread status

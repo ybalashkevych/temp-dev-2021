@@ -21,126 +21,11 @@ if ! command -v log_msg &> /dev/null; then
     fi
 fi
 
-# Mock mode flag (set to 1 to enable mock mode for testing)
-MOCK_AGENT=${MOCK_AGENT:-0}
-
 # Cursor model to use (default: claude-4.5-sonnet)
 CURSOR_MODEL=${CURSOR_MODEL:-claude-4.5-sonnet}
 
-# Invoke agent in mock mode (for testing)
-invoke_agent_mock() {
-    local pr_number=$1
-    local thread_id=$2
-    local command=$3
-    local context=$4
-    
-    # Set LOG_DIR if not already set
-    local log_dir="${LOG_DIR:-logs}"
-    local mock_log="$log_dir/pr-${pr_number}-agent-mock-${thread_id}.log"
-    local work_dir="$log_dir/.agent-work-${thread_id}"
-    
-    log_msg INFO "[MOCK] Agent invocation - mode: $command"
-    
-    # Create work directory for mock
-    mkdir -p "$work_dir"
-    
-    # Save context to file (same as real agent)
-    local context_file="$work_dir/context.md"
-    echo "$context" > "$context_file"
-    
-    # Generate instructions using the same template system
-    local agent_instructions="$work_dir/instructions.md"
-    build_agent_instructions "$pr_number" "$thread_id" "$command" "mock-branch" > "$agent_instructions"
-    
-    # Log what would be sent to agent
-    cat > "$mock_log" <<EOF
-====================================
-MOCK AGENT INVOCATION
-====================================
-Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-PR Number: ${pr_number}
-Thread ID: ${thread_id}
-Command: ${command}
-
-====================================
-FILES GENERATED:
-====================================
-Instructions: ${agent_instructions}
-Context: ${context_file}
-Work directory: ${work_dir}
-
-====================================
-MOCK AGENT RESPONSE:
-====================================
-EOF
-    
-    # Generate mock response based on command
-    local response=""
-    case "$command" in
-        ask)
-            response="SUCCESS: Questions about the feedback
-
-I have a few questions about this feedback:
-
-1. Could you clarify the expected behavior?
-2. Should this change apply to all similar cases?
-3. Are there any edge cases I should consider?
-
-Please provide additional details and I'll proceed with the implementation."
-            ;;
-        plan)
-            response="SUCCESS: Implementation plan created
-
-## Implementation Plan
-
-### Changes Required
-1. Update the affected component
-2. Add necessary validation
-3. Write unit tests
-4. Update documentation
-
-### Files to Modify
-- Component file
-- Test file
-- Documentation
-
-### Estimated Complexity
-Medium - Should take 1-2 iterations
-
-Ready to implement when you confirm this approach."
-            ;;
-        implement)
-            response="SUCCESS: Implementation completed
-
-## Changes Made
-- Fixed the reported issue
-- Added validation logic  
-- Updated tests
-- All tests passing
-- Code coverage maintained
-
-## Build Status
-✅ Build: Success
-✅ Tests: 15/15 passed
-✅ Coverage: 85%
-
-Changes committed and pushed to branch."
-            ;;
-    esac
-    
-    echo "$response" >> "$mock_log"
-    echo "$response"
-    
-    # Simulate processing delay
-    sleep 2
-    
-    log_msg INFO "[MOCK] Agent completed successfully"
-    log_msg INFO "Mock work directory preserved: $work_dir"
-    return 0
-}
-
-# Invoke real cursor agent
-invoke_agent_real() {
+# Invoke cursor agent
+invoke_agent() {
     local pr_number=$1
     local thread_id=$2
     local command=$3
@@ -149,104 +34,64 @@ invoke_agent_real() {
     local agent_log="$LOG_DIR/pr-${pr_number}-agent-${thread_id}.log"
     local work_dir="$LOG_DIR/.agent-work-${thread_id}"
     
-    log_msg INFO "[REAL] Invoking cursor agent - mode: $command"
-    
-    # Create work directory
+    log_msg INFO "Invoking cursor agent - mode: $command"
     mkdir -p "$work_dir"
     
-    # Save context to file for agent
-    local context_file="$work_dir/context.md"
-    echo "$context" > "$context_file"
+    # Save context to file
+    echo "$context" > "$work_dir/context.md"
     
-    # Get PR branch
+    # Get PR branch and checkout
     local pr_branch=$(gh pr view "$pr_number" --repo "${REPO_OWNER}/${REPO_NAME}" \
         --json headRefName --jq '.headRefName' 2>/dev/null)
     
     if [ -z "$pr_branch" ]; then
         log_msg ERROR "Could not determine PR branch"
-        # Don't clean up work directories - keep for debugging
-        # if [ "${KEEP_WORK_DIR:-0}" != "1" ]; then
-        #     rm -rf "$work_dir"
-        # else
-        #     log_msg INFO "Keeping work directory for debugging: $work_dir"
-        # fi
-        log_msg INFO "Work directory preserved: $work_dir"
         return 1
     fi
     
-    # Checkout PR branch
     log_msg INFO "Checking out branch: $pr_branch"
     git fetch origin "$pr_branch" 2>&1 | tee -a "$agent_log"
-    git checkout "$pr_branch" 2>&1 | tee -a "$agent_log"
-    
-    if [ $? -ne 0 ]; then
+    git checkout "$pr_branch" 2>&1 | tee -a "$agent_log" || {
         log_msg ERROR "Failed to checkout branch $pr_branch"
-        # Don't clean up work directories - keep for debugging
-        # if [ "${KEEP_WORK_DIR:-0}" != "1" ]; then
-        #     rm -rf "$work_dir"
-        # else
-        #     log_msg INFO "Keeping work directory for debugging: $work_dir"
-        # fi
-        log_msg INFO "Work directory preserved: $work_dir"
         return 1
-    fi
-    
-    # Pull latest changes
+    }
     git pull origin "$pr_branch" 2>&1 | tee -a "$agent_log"
     
-    # Build agent prompt based on command
-    local agent_instructions="$work_dir/instructions.md"
-    build_agent_instructions "$pr_number" "$thread_id" "$command" "$pr_branch" > "$agent_instructions"
+    # Build agent instructions
+    build_instructions "$pr_number" "$thread_id" "$command" "$pr_branch" > "$work_dir/instructions.md"
     
-    log_msg INFO "Agent instructions saved to: $agent_instructions"
-    log_msg INFO "Context saved to: $context_file"
-    
-    # Create a marker file for the agent to process
-    local marker_file="$work_dir/agent-request.json"
-    cat > "$marker_file" <<EOF
+    # Create request file
+    cat > "$work_dir/agent-request.json" <<EOF
 {
   "pr_number": ${pr_number},
   "thread_id": "${thread_id}",
   "command": "${command}",
   "branch": "${pr_branch}",
   "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "instructions_file": "${agent_instructions}",
-  "context_file": "${context_file}",
+  "instructions_file": "${work_dir}/instructions.md",
+  "context_file": "${work_dir}/context.md",
   "log_file": "${agent_log}",
   "repo": "${REPO_OWNER}/${REPO_NAME}"
 }
 EOF
     
-    log_msg INFO "Agent request prepared: $marker_file"
-    
-    # Invoke the agent via helper script
+    # Invoke cursor agent
     local response=""
     local status=0
     
     if [ -f "./scripts/automation/invoke-cursor-agent.sh" ]; then
-        log_msg INFO "Invoking cursor agent via helper script..."
-        response=$(./scripts/automation/invoke-cursor-agent.sh "$marker_file" 2>&1 | tee -a "$agent_log")
+        response=$(./scripts/automation/invoke-cursor-agent.sh "$work_dir/agent-request.json" 2>&1 | tee -a "$agent_log")
         status=$?
     else
         log_msg WARNING "Cursor agent helper script not found"
-        log_msg INFO "Manual invocation required - see: $agent_instructions"
-        
-        # Create response file for manual pickup
-        local response_file="$work_dir/agent-response.txt"
-        echo "PENDING_MANUAL_INVOCATION" > "$response_file"
-        
-        response="Agent invocation prepared. Manual processing required.
-Instructions: $agent_instructions
-Context: $context_file
-Work directory: $work_dir
-When complete, update: $response_file"
-        status=2  # 2 = pending manual invocation
+        echo "PENDING_MANUAL_INVOCATION" > "$work_dir/agent-response.txt"
+        response="Manual invocation required. See: $work_dir/instructions.md"
+        status=2
     fi
     
-    # Check for response file
-    local response_file="$work_dir/agent-response.txt"
-    if [ -f "$response_file" ]; then
-        response=$(cat "$response_file")
+    # Check response file
+    if [ -f "$work_dir/agent-response.txt" ]; then
+        response=$(cat "$work_dir/agent-response.txt")
         if [ "$response" = "PENDING_MANUAL_INVOCATION" ]; then
             status=2
         elif echo "$response" | grep -q "SUCCESS"; then
@@ -256,61 +101,29 @@ When complete, update: $response_file"
         fi
     fi
     
-    # Don't clean up work directories - keep for debugging
-    # if [ $status -eq 0 ]; then
-    #     if [ "${KEEP_WORK_DIR:-0}" != "1" ]; then
-    #         rm -rf "$work_dir"
-    #     else
-    #         log_msg INFO "Keeping work directory for debugging: $work_dir"
-    #     fi
-    # fi
-    log_msg INFO "Work directory preserved: $work_dir"
-    
     echo "$response"
     return $status
 }
 
-# Build comprehensive instructions for cursor agent
-build_agent_instructions() {
+# Build instructions for cursor agent (simplified)
+build_instructions() {
     local pr_number=$1
     local thread_id=$2
     local command=$3
     local pr_branch=$4
-    # Remove $context parameter - no longer embedded
     
     local template_dir="scripts/automation/templates"
     local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     
-    # Header (common to all modes)
-    cat "$template_dir/instructions-header.md" | \
-        sed "s/{{PR_NUMBER}}/$pr_number/g" | \
-        sed "s/{{THREAD_ID}}/$thread_id/g" | \
-        sed "s/{{BRANCH}}/$pr_branch/g" | \
-        sed "s/{{MODE}}/$command/g" | \
-        sed "s/{{TIMESTAMP}}/$timestamp/g"
-    
-    # Mode-specific instructions
-    cat "$template_dir/instructions-$command.md" | \
-        sed "s/{{PR_NUMBER}}/$pr_number/g" | \
-        sed "s/{{THREAD_ID}}/$thread_id/g" | \
-        sed "s/{{BRANCH}}/$pr_branch/g"
-    
-    # Footer (common to all modes)
-    cat "$template_dir/instructions-footer.md"
-}
-
-# Main agent invocation entry point
-invoke_agent() {
-    local pr_number=$1
-    local thread_id=$2
-    local command=$3
-    local context=$4
-    
-    if [ "$MOCK_AGENT" = "1" ]; then
-        invoke_agent_mock "$pr_number" "$thread_id" "$command" "$context"
-    else
-        invoke_agent_real "$pr_number" "$thread_id" "$command" "$context"
-    fi
+    # Use sed to replace all placeholders in one pass
+    sed -e "s/{{PR_NUMBER}}/$pr_number/g" \
+        -e "s/{{THREAD_ID}}/$thread_id/g" \
+        -e "s/{{BRANCH}}/$pr_branch/g" \
+        -e "s/{{MODE}}/$command/g" \
+        -e "s/{{TIMESTAMP}}/$timestamp/g" \
+        "$template_dir/instructions-header.md" \
+        "$template_dir/instructions-$command.md" \
+        "$template_dir/instructions-footer.md"
 }
 
 # Update PR description with changes (called by agent after successful implement)

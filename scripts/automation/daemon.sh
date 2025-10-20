@@ -122,51 +122,64 @@ add_reaction() {
 
 # Ensure comments cache directory exists
 ensure_comments_cache() {
+    local thread_id=$1
     mkdir -p "$LOG_DIR/comments"
+    if [ -n "$thread_id" ]; then
+        mkdir -p "$LOG_DIR/comments/thread-${thread_id}"
+    fi
 }
 
-# Get PR-level comments (excludes resolved conversations)
-get_pr_comments() {
+# Fetch all comments (PR and inline) in one function
+fetch_all_comments() {
     local pr_number=$1
     
-    ensure_comments_cache
+    ensure_comments_cache ""
     
-    # Fetch comments with base64-encoded bodies to prevent line splitting
+    # Get PR-level comments
     gh api "repos/${REPO_OWNER}/${REPO_NAME}/issues/${pr_number}/comments" \
         --jq '.[] | select(.performed_via_github_app == null or .performed_via_github_app == false) | 
-              "\(.id)|\(.user.login)|\(.body | @base64)"' 2>/dev/null | \
-    while IFS='|' read -r id user body_b64; do
-        if [ -n "$id" ]; then
-            # Decode body and write to file
-            local body=$(echo "$body_b64" | base64 --decode 2>/dev/null || echo "")
-            local body_file="$LOG_DIR/comments/pr-${pr_number}-${id}.txt"
-            echo "$body" > "$body_file"
-            # Output metadata with file path
-            echo "${id}|issue|${user}|${body_file}"
-        fi
-    done || echo ""
-}
-
-# Get inline review comments (excludes resolved, includes only top-level not replies)
-get_review_comments() {
-    local pr_number=$1
+              "\(.id)|pr|\(.user.login)||"' 2>/dev/null
     
-    ensure_comments_cache
-    
-    # Get review comments with base64-encoded bodies to prevent line splitting
+    # Get inline review comments (top-level only, not replies)
     gh api "repos/${REPO_OWNER}/${REPO_NAME}/pulls/${pr_number}/comments" \
         --jq '.[] | select(.in_reply_to_id == null) | 
-              "\(.id)|\(.user.login)|\(.path):\(.line // .original_line)|\(.body | @base64)"' 2>/dev/null | \
-    while IFS='|' read -r id user location body_b64; do
-        if [ -n "$id" ]; then
-            # Decode body and write to file
-            local body=$(echo "$body_b64" | base64 --decode 2>/dev/null || echo "")
-            local body_file="$LOG_DIR/comments/pr-${pr_number}-${id}.txt"
-            echo "$body" > "$body_file"
-            # Output metadata with file path
-            echo "${id}|review|${user}|${location}|${body_file}"
-        fi
-    done || echo ""
+              "\(.id)|inline|\(.user.login)|\(.path):\(.line // .original_line)|"' 2>/dev/null
+}
+
+# Get comment body from GitHub
+get_comment_body() {
+    local comment_id=$1
+    local is_inline=$2
+    
+    local api_endpoint
+    if [ "$is_inline" = "inline" ]; then
+        api_endpoint="repos/${REPO_OWNER}/${REPO_NAME}/pulls/comments/${comment_id}"
+    else
+        api_endpoint="repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${comment_id}"
+    fi
+    
+    gh api "$api_endpoint" --jq '.body' 2>/dev/null || echo ""
+}
+
+# Save comment to appropriate location
+save_comment() {
+    local pr_number=$1
+    local comment_id=$2
+    local is_inline=$3
+    local thread_id=$4
+    local body=$5
+    
+    local comment_file
+    if [ "$is_inline" = "inline" ] && [ -n "$thread_id" ]; then
+        ensure_comments_cache "$thread_id"
+        comment_file="$LOG_DIR/comments/thread-${thread_id}/pr-${pr_number}-${comment_id}.txt"
+    else
+        ensure_comments_cache ""
+        comment_file="$LOG_DIR/comments/pr-${pr_number}-${comment_id}.txt"
+    fi
+    
+    echo "$body" > "$comment_file"
+    echo "$comment_file"
 }
 
 # Check if conversation thread is resolved
@@ -196,141 +209,100 @@ is_conversation_resolved() {
 parse_command() {
     local body=$1
     
-    log_msg DEBUG "Parsing command from: $body"
-    
     # Check for explicit commands
     if echo "$body" | grep -q "@ybalashkevych plan"; then
-        log_msg DEBUG "Detected command: plan"
         echo "plan"
-    elif echo "$body" | grep -q "@ybalashkevych fix"; then
-        log_msg DEBUG "Detected command: implement (fix)"
-        echo "implement"
-    elif echo "$body" | grep -q "@ybalashkevych implement"; then
-        log_msg DEBUG "Detected command: implement"
+    elif echo "$body" | grep -q "@ybalashkevych \(fix\|implement\)"; then
         echo "implement"
     else
-        log_msg DEBUG "No explicit command found, defaulting to: ask"
-        # Default: ask mode for any feedback
         echo "ask"
     fi
 }
 
 # Clean comment for agent consumption
-clean_comment_for_agent() {
+clean_comment() {
     local body=$1
     
-    # Remove GitHub-specific artifacts
+    # Remove GitHub-specific artifacts and mentions
     echo "$body" | \
-        sed 's/<details>/\n/g' | \
-        sed 's/<\/details>/\n/g' | \
-        sed 's/<summary>//g' | \
-        sed 's/<\/summary>//g' | \
-        sed 's/```suggestion/```/g' | \
-        sed 's/@ybalashkevych [a-z]*//' | \
-        sed 's/^[ \t]*//;s/[ \t]*$//'  # Trim whitespace
+        sed -e 's/<details>/\n/g' -e 's/<\/details>/\n/g' \
+            -e 's/<summary>//g' -e 's/<\/summary>//g' \
+            -e 's/```suggestion/```/g' \
+            -e 's/@ybalashkevych [a-z]*//' \
+            -e 's/^[ \t]*//;s/[ \t]*$//'
 }
 
-# Get all feedback for a PR
+# Get all feedback for a PR (simplified)
 get_pr_feedback() {
     local pr_number=$1
     local log_file="$LOG_DIR/pr-${pr_number}-monitor.log"
     
     log_msg INFO "Fetching feedback for PR #${pr_number}..." | tee -a "$log_file"
     
-    local feedback_found=0
+    local all_comments=$(fetch_all_comments "$pr_number")
     
-    # Get PR comments
-    local pr_comments=$(get_pr_comments "$pr_number")
-    if [ -n "$pr_comments" ]; then
-        while IFS='|' read -r comment_id type author body_file; do
-            if [ -z "$comment_id" ]; then
-                continue
-            fi
-            
-            # Read body from file
-            local body=$(cat "$body_file" 2>/dev/null || echo "")
-            
-            # Skip if already fully processed (has both reactions)
-            if has_processed_reactions "$comment_id" "$type"; then
-                log_msg DEBUG "Skipping already processed comment $comment_id" | tee -a "$log_file"
-                continue
-            fi
-            
-            # Parse command
-            local command=$(parse_command "$body")
-            local cleaned_body=$(clean_comment_for_agent "$body")
-            
-            log_msg INFO "Found PR comment: ID=$comment_id, Author=$author, Command=$command" | tee -a "$log_file"
-            echo "${pr_number}|${comment_id}|${type}|${author}|${command}||${cleaned_body}"
-            feedback_found=1
-        done <<< "$pr_comments"
+    if [ -z "$all_comments" ]; then
+        log_msg INFO "No comments found for PR #${pr_number}" | tee -a "$log_file"
+        return 0
     fi
     
-    # Get review comments
-    local review_comments=$(get_review_comments "$pr_number")
-    if [ -n "$review_comments" ]; then
-        while IFS='|' read -r comment_id type author file_line body_file; do
-            if [ -z "$comment_id" ]; then
-                continue
-            fi
-            
-            # Read body from file
-            local body=$(cat "$body_file" 2>/dev/null || echo "")
-            
-            # Skip if already fully processed
-            if has_processed_reactions "$comment_id" "$type"; then
-                log_msg DEBUG "Skipping already processed comment $comment_id" | tee -a "$log_file"
-                continue
-            fi
-            
-            # Check if conversation is resolved (skip if true)
-            # For now, we'll process all unresolved - GitHub API limitation
-            
-            # Parse command
-            local command=$(parse_command "$body")
-            local cleaned_body=$(clean_comment_for_agent "$body")
-            
-            log_msg INFO "Found review comment: ID=$comment_id, Author=$author, Location=$file_line, Command=$command" | tee -a "$log_file"
-            echo "${pr_number}|${comment_id}|${type}|${author}|${command}|${file_line}|${cleaned_body}"
-            feedback_found=1
-        done <<< "$review_comments"
-    fi
-    
-    if [ $feedback_found -eq 0 ]; then
-        log_msg INFO "No unprocessed feedback found for PR #${pr_number}" | tee -a "$log_file"
-    fi
-    
-    return 0
+    # Process each comment
+    while IFS='|' read -r comment_id is_inline author code_location _; do
+        [ -z "$comment_id" ] && continue
+        
+        # Determine comment type for reactions API
+        local comment_type="issue"
+        [ "$is_inline" = "inline" ] && comment_type="review"
+        
+        # Skip if already processed
+        if has_processed_reactions "$comment_id" "$comment_type"; then
+            log_msg DEBUG "Skipping processed comment $comment_id" | tee -a "$log_file"
+            continue
+        fi
+        
+        # Get comment body
+        local body=$(get_comment_body "$comment_id" "$is_inline")
+        [ -z "$body" ] && continue
+        
+        # Parse and clean
+        local command=$(parse_command "$body")
+        local cleaned_body=$(clean_comment "$body")
+        
+        log_msg INFO "Found comment: ID=$comment_id, Type=$is_inline, Author=$author, Command=$command" | tee -a "$log_file"
+        echo "${pr_number}|${comment_id}|${is_inline}|${comment_type}|${author}|${command}|${code_location}|${cleaned_body}"
+    done <<< "$all_comments"
 }
 
-# Process a single comment/feedback
+# Process a single comment/feedback (simplified)
 process_feedback() {
     local pr_number=$1
     local comment_id=$2
-    local comment_type=$3
-    local author=$4
-    local command=$5
-    local file_line=$6
-    local body=$7
+    local is_inline=$3
+    local comment_type=$4
+    local author=$5
+    local command=$6
+    local code_location=$7
+    local body=$8
     
     local log_file="$LOG_DIR/pr-${pr_number}-monitor.log"
     
     log_msg INFO "Processing feedback from $author (comment: $comment_id, command: $command)" | tee -a "$log_file"
     
-    # Step 1: Add 👀 reaction immediately (guard against re-processing)
+    # Add 👀 reaction (guard against re-processing)
     add_reaction "$comment_id" "$comment_type" "eyes"
     
-    # Step 2: Get or create thread for this comment
+    # Get or create thread for this comment
     local thread_id=$(get_or_create_thread "$pr_number" "$comment_id")
     log_msg INFO "Using thread: $thread_id" | tee -a "$log_file"
     
-    # Step 3: Add feedback to thread context
-    add_to_thread "$thread_id" "user" "$author" "$body" "$file_line"
+    # Save comment to appropriate location
+    save_comment "$pr_number" "$comment_id" "$is_inline" "$thread_id" "$body"
     
-    # Step 4: Build full context for agent
-    local context=$(build_agent_context "$pr_number" "$thread_id")
+    # Add feedback to thread context
+    add_to_thread "$thread_id" "user" "$author" "$body" "$code_location"
     
-    # Step 5: Invoke agent with context and command
+    # Build context and invoke agent
+    local context=$(build_context "$pr_number" "$thread_id")
     log_msg INFO "Invoking agent in '$command' mode..." | tee -a "$log_file"
     local response=$(invoke_agent "$pr_number" "$thread_id" "$command" "$context")
     local status=$?
@@ -338,34 +310,22 @@ process_feedback() {
     if [ $status -eq 0 ]; then
         log_msg SUCCESS "Agent completed successfully" | tee -a "$log_file"
         
-        # Step 6: Add agent response to thread
+        # Add agent response to thread
         add_to_thread "$thread_id" "assistant" "cursor-agent" "$response" ""
         
-        # Step 7: Post response to PR and get new comment ID
+        # Post response to PR
         local agent_comment_id=$(post_agent_response "$pr_number" "$comment_id" "$comment_type" "$command" "$response")
         
         if [ -n "$agent_comment_id" ]; then
             log_msg INFO "Agent posted comment: $agent_comment_id" | tee -a "$log_file"
-            
-            # Step 8: Add 🚀 reaction to AGENT's comment (not original)
             add_reaction "$agent_comment_id" "issue" "rocket"
-            
-            # Step 9: Add ✅ reaction to AGENT's comment
             add_reaction "$agent_comment_id" "issue" "+1"
-            
-            # Also add eyes reaction to original comment to mark as processed
-            add_reaction "$comment_id" "$comment_type" "eyes"
-        else
-            log_msg WARNING "Could not get agent comment ID, skipping reactions" | tee -a "$log_file"
         fi
     else
         log_msg ERROR "Agent failed to process feedback" | tee -a "$log_file"
-        
-        # Add ❌ reaction (failure)
         add_reaction "$comment_id" "$comment_type" "-1"
         
-        # Post failure comment
-        local failure_message="❌ **Processing Failed**\n\nI encountered an error while processing this feedback.\n\nThread: \`${thread_id}\`\nPlease check the logs for details."
+        local failure_message="❌ **Processing Failed**\n\nThread: \`${thread_id}\`\nPlease check the logs."
         post_comment "$pr_number" "$failure_message"
     fi
 }
@@ -462,12 +422,9 @@ monitor_prs() {
                 fi
                 
                 # Process each feedback item
-                while IFS='|' read -r pr_num comment_id comment_type author command file_line body; do
-                    if [ -z "$comment_id" ]; then
-                        continue
-                    fi
-                    
-                    process_feedback "$pr_num" "$comment_id" "$comment_type" "$author" "$command" "$file_line" "$body"
+                while IFS='|' read -r pr_num comment_id is_inline comment_type author command code_location body; do
+                    [ -z "$comment_id" ] && continue
+                    process_feedback "$pr_num" "$comment_id" "$is_inline" "$comment_type" "$author" "$command" "$code_location" "$body"
                 done <<< "$feedback"
                 
             done <<< "$prs"
