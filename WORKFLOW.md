@@ -618,7 +618,7 @@ All PRs must pass:
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Complete architecture documentation
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contributing guidelines
 - [README.md](README.md) - Project overview
-- [.cursor/rules/](. cursor/rules/) - Cursor AI rules for automated assistance
+- [.cursor/rules/](.cursor/rules/) - Cursor AI rules for automated assistance
 
 ## Getting Help
 

@@ -181,7 +181,7 @@ cmd_install() {
     echo -e "${GREEN}🎉 Setup complete!${NC}"
     echo ""
     echo "Next steps:"
-    echo "  1. Verify setup: ./scripts/cursor-quality.sh verify"
+    echo "  1. Verify setup: swiftlint --version && gh auth status"
     echo "  2. Open in Xcode: open LiveAssistant.xcodeproj"
     echo "  3. Build and run: Cmd+R"
     echo ""

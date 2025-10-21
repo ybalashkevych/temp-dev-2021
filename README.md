@@ -214,7 +214,7 @@ func testMyFeature() async throws {
 }
 ```
 
-See [CODING_STANDARDS.md](./CODING_STANDARDS.md) for testing guidelines.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for testing and coding guidelines.
 
 ## 🛠️ Development
 
@@ -245,7 +245,7 @@ swift package --allow-writing-to-package-directory generate-code-for-resources
 
 ### Coding Standards
 
-- Follow [CODING_STANDARDS.md](./CODING_STANDARDS.md)
+- Follow [ARCHITECTURE.md](./ARCHITECTURE.md)
 - Use `@Observable` and `@MainActor` for ViewModels
 - Inject dependencies via protocols
 - Use SwiftGen for type-safe resource access (`Strings`, `Asset`)

@@ -1,6 +1,6 @@
 # Automated Development Workflow for Cursor AI
 
-> **Note:** This document extends [WORKFLOW.md](../../../WORKFLOW.md) with automation-specific details for Cursor AI. For general development workflow that applies to all developers, see WORKFLOW.md first.
+> **Note:** This document extends [WORKFLOW.md](../../WORKFLOW.md) with automation-specific details for Cursor AI. For general development workflow that applies to all developers, see WORKFLOW.md first.
 
 ## Overview
 
@@ -438,9 +438,9 @@ Update this document and ARCHITECTURE.md as patterns evolve.
 
 ## References
 
-- **[WORKFLOW.md](../../../WORKFLOW.md)** - Human-readable workflow (READ THIS FIRST)
-- **[ARCHITECTURE.md](../../../ARCHITECTURE.md)** - Complete architecture documentation
-- **[CONTRIBUTING.md](../../../CONTRIBUTING.md)** - Contributing guidelines
+- **[WORKFLOW.md](../../WORKFLOW.md)** - Human-readable workflow (READ THIS FIRST)
+- **[ARCHITECTURE.md](../../ARCHITECTURE.md)** - Complete architecture documentation
+- **[CONTRIBUTING.md](../../CONTRIBUTING.md)** - Contributing guidelines
 - **[.cursor/rules/architecture.mdc](architecture.mdc)** - Architecture rules
 - **[.cursor/rules/testing.mdc](testing.mdc)** - Testing patterns
 - **[.cursor/rules/file-content.mdc](file-content.mdc)** - File formatting rules

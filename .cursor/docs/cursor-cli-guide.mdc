@@ -206,7 +206,7 @@ The daemon workflow:
 Specify model via environment variable:
 ```bash
 export CURSOR_MODEL=claude-4.5-sonnet
-./scripts/daemon-control.sh start
+cd scripts/automation && cursor-daemon daemon
 ```
 
 Default model: `claude-4.5-sonnet`

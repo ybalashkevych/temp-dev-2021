@@ -52,7 +52,9 @@ gh auth login
 ./scripts/setup.sh install
 
 # Verify setup
-./scripts/cursor-quality.sh verify
+swiftlint --version
+gh auth status
+xcodebuild -version
 
 # Open in Xcode
 open LiveAssistant.xcodeproj
@@ -60,10 +62,17 @@ open LiveAssistant.xcodeproj
 
 ## Verify Setup
 
-Run the verification script to ensure everything is configured correctly:
+Ensure all required tools are installed and configured:
 
 ```bash
-./scripts/cursor-quality.sh verify
+# Check SwiftLint
+swiftlint --version
+
+# Check GitHub CLI authentication
+gh auth status
+
+# Check Xcode
+xcodebuild -version
 ```
 
 ---
@@ -198,16 +207,20 @@ func testYourFeature() async throws {
 Before creating a PR, run comprehensive quality checks:
 
 ```bash
-# Run self-review
-./scripts/cursor-quality.sh review
+# SwiftLint (strict mode - zero warnings)
+swiftlint lint --strict
 
-# What it checks:
-# - SwiftLint strict validation
-# - swift-format validation
-# - Build verification
-# - All tests pass
-# - Architecture compliance
-# - Code coverage >= 20%
+# swift-format validation
+find LiveAssistant -name "*.swift" -not -path "*/Generated/*" -exec swift-format lint --strict {} +
+
+# Build verification
+xcodebuild -scheme LiveAssistant -destination 'platform=macOS' clean build
+
+# Run all tests
+xcodebuild test -scheme LiveAssistant -destination 'platform=macOS'
+
+# Check coverage (must be >= 20%)
+xcodebuild test -scheme LiveAssistant -destination 'platform=macOS' -enableCodeCoverage YES
 ```
 
 ### 5. Create Pull Request
@@ -279,7 +292,7 @@ All checks must pass before merge.
 **Responding to feedback:**
 1. Read review comments
 2. Make requested changes
-3. Run self-review again: `./scripts/cursor-quality.sh review`
+3. Run quality checks again: `swiftlint lint --strict && xcodebuild test -scheme LiveAssistant`
 4. Push updates
 5. Respond to PR comments on GitHub
 
@@ -484,46 +497,6 @@ Automation rules:
 
 # Scripts Reference
 
-## cursor-quality.sh
-
-Quality checks and verification.
-
-**Run self-review:**
-```bash
-./scripts/cursor-quality.sh review
-```
-
-Checks:
-- SwiftLint strict validation
-- swift-format validation
-- Build verification
-- All tests pass
-- Architecture compliance
-- Code coverage >= 20%
-
-**Verify setup:**
-```bash
-./scripts/cursor-quality.sh verify
-```
-
-Checks:
-- SwiftLint installed
-- swift-format installed
-- GitHub CLI authenticated
-- Git hooks installed
-- Project builds
-
-**Run tests with coverage:**
-```bash
-./scripts/cursor-quality.sh test
-```
-
-Generates:
-- JSON coverage data
-- Text coverage report
-- Per-file coverage breakdown
-- Excludes Views, Tests, Generated files
-
 ## setup.sh
 
 Setup and configuration tool.
@@ -598,16 +571,16 @@ xcodebuild test -scheme LiveAssistant \
 ## Coverage Below Threshold
 
 ```bash
-# Generate detailed report
-./scripts/cursor-quality.sh test
+# Run tests with coverage
+xcodebuild test -scheme LiveAssistant -destination 'platform=macOS' -enableCodeCoverage YES
 
-# Focus on:
+# Focus on adding tests for:
 # - ViewModels (highest priority)
 # - Repositories
 # - Services
 # - Utilities
 
-# Views and Components are excluded from coverage
+# Views and Components are excluded from coverage requirements
 ```
 
 ## Build Failures

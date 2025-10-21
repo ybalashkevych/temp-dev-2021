@@ -354,5 +354,4 @@ func testLoadMessages() async throws {
 ## References
 
 For detailed examples and complete documentation, see:
-- `ARCHITECTURE.md` - Full architecture documentation
-- `CODING_STANDARDS.md` - Code style and conventions
+- `ARCHITECTURE.md` - Full architecture documentation including code style and conventions
