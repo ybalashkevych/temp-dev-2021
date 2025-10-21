@@ -73,11 +73,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
       - name: Show Xcode version
         run: xcodebuild -version
 
@@ -127,16 +122,16 @@ jobs:
             -scheme LiveAssistant \
             -destination 'platform=macOS,arch=arm64' \
             -testPlan LiveAssistant \
-            -enableCodeCoverage YES \
+            -enableCodeCoverage NO \
             -configuration Debug \
             -derivedDataPath "$DERIVED_DATA_PATH" \
             -skipPackagePluginValidation \
             -skipMacroValidation \
+            -parallel-testing-enabled YES \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_ALLOWED=YES \
             -resultBundlePath TestResults.xcresult 2>&1 | tee test-output.txt || echo "TESTS_FAILED=true" >> $GITHUB_ENV
           echo "=== Build Completed at $(date) ==="
-        continue-on-error: true
 
       - name: Generate coverage report
         if: always()
