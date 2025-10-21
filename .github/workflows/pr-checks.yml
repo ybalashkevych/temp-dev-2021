@@ -65,7 +65,7 @@ jobs:
 
   build-test-and-coverage:
     name: Build, Test & Coverage
-    runs-on: macos-latest
+    runs-on: macos-26
     needs: lint-and-format
     timeout-minutes: 10
 
@@ -136,6 +136,7 @@ jobs:
           if [ ! -d "TestResults.xcresult" ]; then
             echo "0.00" > coverage_result.txt
             echo "FAILED" > coverage_status.txt
+            echo "TESTS_FAILED=true" >> $GITHUB_ENV
             echo "⚠️ TestResults.xcresult not found - tests may have failed before completion"
             exit 0
           fi
@@ -144,6 +145,7 @@ jobs:
           if ! xcrun xccov view --report --json TestResults.xcresult > coverage.json 2>&1; then
             echo "0.00" > coverage_result.txt
             echo "FAILED" > coverage_status.txt
+            echo "TESTS_FAILED=true" >> $GITHUB_ENV
             echo "⚠️ Failed to generate coverage report"
             exit 0
           fi
