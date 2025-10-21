@@ -15,20 +15,23 @@ import Testing
 @Suite
 struct TranscriptionRepositoryTests {
     // MARK: - Helper Methods
-    
-    private func createRepository() -> (TranscriptionRepository, MockMicrophoneAudioService, MockSystemAudioService, MockTranscriptionService, MockTextAnalysisService) {
+
+    private func createRepository() -> (
+        TranscriptionRepository, MockMicrophoneAudioService, MockSystemAudioService, MockTranscriptionService,
+        MockTextAnalysisService
+    ) {
         let mockMicService = MockMicrophoneAudioService()
         let mockSystemService = MockSystemAudioService()
         let mockTranscriptionService = MockTranscriptionService()
         let mockTextAnalysisService = MockTextAnalysisService()
-        
+
         let repository = TranscriptionRepository(
             microphoneService: mockMicService,
             systemAudioService: mockSystemService,
             transcriptionService: mockTranscriptionService,
             textAnalysisService: mockTextAnalysisService
         )
-        
+
         return (repository, mockMicService, mockSystemService, mockTranscriptionService, mockTextAnalysisService)
     }
 
@@ -37,9 +40,9 @@ struct TranscriptionRepositoryTests {
     @Test
     func startMicrophoneCreatesSession() async throws {
         let (repository, mockMic, _, mockTranscription, _) = createRepository()
-        
+
         try await repository.startMicrophone()
-        
+
         let session = await repository.getCurrentSession()
         #expect(session != nil)
         #expect(session?.activeSources.contains(.microphone) == true)
@@ -50,10 +53,10 @@ struct TranscriptionRepositoryTests {
     @Test
     func stopMicrophoneStopsServices() async throws {
         let (repository, mockMic, _, mockTranscription, _) = createRepository()
-        
+
         try await repository.startMicrophone()
         await repository.stopMicrophone()
-        
+
         #expect(mockMic.stopCaptureCallCount == 1)
         #expect(mockTranscription.stopTranscriptionCallCount == 1)
     }
@@ -63,9 +66,9 @@ struct TranscriptionRepositoryTests {
     @Test
     func startSystemAudioCreatesSession() async throws {
         let (repository, _, mockSystem, _, _) = createRepository()
-        
+
         try await repository.startSystemAudio()
-        
+
         let session = await repository.getCurrentSession()
         #expect(session != nil)
         #expect(session?.activeSources.contains(.systemAudio) == true)
@@ -75,10 +78,10 @@ struct TranscriptionRepositoryTests {
     @Test
     func stopSystemAudioStopsServices() async throws {
         let (repository, _, mockSystem, _, _) = createRepository()
-        
+
         try await repository.startSystemAudio()
         await repository.stopSystemAudio()
-        
+
         #expect(mockSystem.stopCaptureCallCount == 1)
     }
 
@@ -87,10 +90,10 @@ struct TranscriptionRepositoryTests {
     @Test
     func clearSessionRemovesData() async throws {
         let (repository, _, _, _, _) = createRepository()
-        
+
         try await repository.startMicrophone()
         await repository.clearSession()
-        
+
         let session = await repository.getCurrentSession()
         #expect(session == nil)
     }
@@ -98,11 +101,11 @@ struct TranscriptionRepositoryTests {
     @Test
     func stopAllStopsAllServices() async throws {
         let (repository, mockMic, mockSystem, _, _) = createRepository()
-        
+
         try await repository.startMicrophone()
         try await repository.startSystemAudio()
         await repository.stopAll()
-        
+
         #expect(mockMic.stopCaptureCallCount == 1)
         #expect(mockSystem.stopCaptureCallCount == 1)
     }
