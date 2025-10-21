@@ -52,11 +52,11 @@ This project uses a fully automated development workflow with:
 
 1. **Create issue** on GitHub (web/mobile)
 2. **Cursor implements** - Follows architecture rules, writes tests
-3. **Self-review** - `./scripts/cursor-quality.sh review`
-4. **Create PR** - `./scripts/cursor-pr.sh create <issue> <branch> "<title>" "<body>"`
+3. **Self-review** - Run quality checks before creating PR
+4. **Create PR** - Use GitHub CLI: `gh pr create`
 5. **CI checks** - Automated quality gates
 6. **Review & approve** - From web/mobile
-7. **Merge** - `./scripts/cursor-pr.sh merge <pr-number>`
+7. **Merge** - Via GitHub UI or CLI: `gh pr merge`
 
 ### Background Daemon (Optional)
 
@@ -64,25 +64,16 @@ The cursor daemon monitors GitHub PRs and automatically responds to feedback.
 
 **Start the daemon:**
 ```bash
-./scripts/daemon-control.sh start
-```
+cd scripts/automation
+cursor-daemon daemon
 
-**Check status:**
-```bash
-./scripts/daemon-control.sh status
-```
-
-**Stop the daemon:**
-```bash
-./scripts/daemon-control.sh stop
-```
-
-**View logs:**
-```bash
-tail -f logs/cursor-daemon.log
+# Or with custom settings
+cursor-daemon daemon --poll-interval 30 --log-file logs/daemon.log
 ```
 
 The daemon will continuously monitor PRs every 60 seconds and respond to comments automatically.
+
+See [scripts/automation/README.md](scripts/automation/README.md) for full automation documentation.
 
 ## 🚀 Getting Started
 

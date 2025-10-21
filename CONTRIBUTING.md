@@ -212,15 +212,18 @@ Before creating a PR, run comprehensive quality checks:
 
 ### 5. Create Pull Request
 
-Use the PR script with conventional commit format:
+Use GitHub CLI with conventional commit format:
 
 ```bash
-./scripts/cursor-pr.sh create <issue-number> <branch-name> "<title>" "<body>"
+gh pr create --title "<title>" --body "<body>"
 
 # Example:
-./scripts/cursor-pr.sh create 42 feat/issue-42-dark-mode \
-  "#42: (feat): Add dark mode support" \
-  "Implements dark mode with system preference support..."
+gh pr create \
+  --title "#42: (feat): Add dark mode support" \
+  --body "Implements dark mode with system preference support..."
+
+# Or use interactive mode
+gh pr create --web
 ```
 
 **PR Title Format:**
@@ -278,14 +281,16 @@ All checks must pass before merge.
 2. Make requested changes
 3. Run self-review again: `./scripts/cursor-quality.sh review`
 4. Push updates
-5. Respond to PR with `./scripts/cursor-pr.sh respond <pr-number> "Summary of changes"`
+5. Respond to PR comments on GitHub
 
 ### 8. Merge
 
 Once approved and all checks pass:
 
 ```bash
-./scripts/cursor-pr.sh merge <pr-number>
+gh pr merge <pr-number>
+
+# Or merge via GitHub UI
 ```
 
 **What happens:**
@@ -479,30 +484,6 @@ Automation rules:
 
 # Scripts Reference
 
-## cursor-pr.sh
-
-Multi-purpose PR management tool.
-
-**Create PR:**
-```bash
-./scripts/cursor-pr.sh create <issue-number> <branch-name> "<title>" "<body>"
-```
-
-**Merge PR:**
-```bash
-./scripts/cursor-pr.sh merge <pr-number>
-```
-
-**Process PR (for automation):**
-```bash
-./scripts/cursor-pr.sh process <pr-number>
-```
-
-**Respond to feedback:**
-```bash
-./scripts/cursor-pr.sh respond <pr-number> "Summary of changes"
-```
-
 ## cursor-quality.sh
 
 Quality checks and verification.
@@ -654,8 +635,8 @@ git push origin <branch-name>
 # Verify gh is authenticated
 gh auth status
 
-# Check script permissions
-chmod +x scripts/cursor-pr.sh
+# Try creating PR via GitHub CLI
+gh pr create --web
 ```
 
 ---

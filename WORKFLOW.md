@@ -53,22 +53,9 @@ The daemon will:
 - Check for new PR comments every 60 seconds
 - Post analysis as @ybalashkevych
 - Wait for `@ybalashkevych implement` or `@ybalashkevych plan` commands
-
-**Legacy Bash Version** (deprecated):
-```bash
-./scripts/daemon-control.sh start
-```
-
-See [scripts/automation/README.md](scripts/automation/README.md) for full automation documentation.
 - Execute implementation when requested
 
-**Control commands:**
-```bash
-./scripts/daemon-control.sh status   # Check if running
-./scripts/daemon-control.sh stop     # Stop the daemon
-./scripts/daemon-control.sh restart  # Restart the daemon
-tail -f logs/cursor-daemon.log       # View logs
-```
+See [scripts/automation/README.md](scripts/automation/README.md) for full automation documentation.
 
 ## Branch Naming
 

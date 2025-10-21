@@ -186,7 +186,7 @@ cmd_install() {
     echo "  3. Build and run: Cmd+R"
     echo ""
     echo "Optional: Start background daemon for PR monitoring"
-    echo "  ./scripts/daemon-control.sh start"
+    echo "  cd scripts/automation && cursor-daemon daemon"
     echo ""
     echo "To bypass hooks (not recommended): git commit --no-verify"
     echo ""
