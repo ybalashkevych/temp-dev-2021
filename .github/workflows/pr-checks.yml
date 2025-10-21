@@ -18,7 +18,7 @@ jobs:
   lint-and-format:
     name: Code Quality Checks
     runs-on: macos-26
-    timeout-minutes: 15
+    timeout-minutes: 2
     
     steps:
       - name: Checkout code
@@ -65,13 +65,18 @@ jobs:
 
   build-test-and-coverage:
     name: Build, Test & Coverage
-    runs-on: macos-26
+    runs-on: macos-latest
     needs: lint-and-format
-    timeout-minutes: 30
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -94,7 +99,7 @@ jobs:
           rm -rf DerivedData
           
       - name: Disable SwiftLint plugin for CI
-        run: bash scripts/disable-swiftlint-plugin.sh
+        run: bash scripts/ci/disable-swiftlint-plugin.sh
           
       - name: Resolve SPM dependencies
         run: xcodebuild -resolvePackageDependencies -scheme LiveAssistant -skipPackagePluginValidation -skipMacroValidation
@@ -124,7 +129,6 @@ jobs:
       - name: Generate coverage report
         if: always()
         run: |
-          # Add debugging
           echo "📊 Checking xcresult bundle..."
           ls -lh TestResults.xcresult/ || echo "❌ xcresult not found"
           
@@ -137,7 +141,6 @@ jobs:
           fi
           
           echo "📊 Generating coverage JSON..."
-          # Generate coverage JSON
           if ! xcrun xccov view --report --json TestResults.xcresult > coverage.json 2>&1; then
             echo "0.00" > coverage_result.txt
             echo "FAILED" > coverage_status.txt
@@ -148,77 +151,8 @@ jobs:
           echo "📊 Coverage JSON size:"
           ls -lh coverage.json
           
-          echo "📊 Coverage JSON preview:"
-          head -20 coverage.json
-          
-          # Parse coverage JSON and calculate percentage
-          # Exclude: Views (SwiftUI), Tests, Generated files
-          python3 << 'EOF'
-          import json
-          import sys
-          
-          try:
-              with open('coverage.json', 'r') as f:
-                  coverage_data = json.load(f)
-          except Exception as e:
-              print(f"Error reading coverage.json: {e}")
-              with open('coverage_result.txt', 'w') as f:
-                  f.write("0.00")
-              with open('coverage_status.txt', 'w') as f:
-                  f.write("FAILED")
-              sys.exit(0)
-          
-          total_lines = 0
-          covered_lines = 0
-          
-          def should_exclude(filepath):
-              # Exclude directories
-              if any(pattern in filepath for pattern in ['/Views/', '/Tests/', '/Generated/', '/Components/', '/UITests/', '/Models/', '/App/']):
-                  return True
-              # Exclude files ending with View.swift (but not ViewModel.swift)
-              if filepath.endswith('View.swift') and not filepath.endswith('ViewModel.swift'):
-                  return True
-              # Exclude test-related files
-              if '.xctest' in filepath:
-                  return True
-              return False
-          
-          # Process all targets
-          for target in coverage_data.get('targets', []):
-              for file_data in target.get('files', []):
-                  filepath = file_data.get('path', '')
-                  
-                  if should_exclude(filepath):
-                      continue
-                  
-                  # Use file-level coverage data
-                  total_lines += file_data.get('executableLines', 0)
-                  covered_lines += file_data.get('coveredLines', 0)
-          
-          if total_lines > 0:
-              coverage_pct = (covered_lines / total_lines) * 100
-          else:
-              coverage_pct = 0.0
-          
-          print(f"Total executable lines: {total_lines}")
-          print(f"Covered lines: {covered_lines}")
-          print(f"Coverage: {coverage_pct:.2f}%")
-          
-          # Write to file for next step
-          with open('coverage_result.txt', 'w') as f:
-              f.write(f"{coverage_pct:.2f}")
-          
-          # Check threshold (matches COVERAGE_THRESHOLD env var at workflow level)
-          threshold = 20.0
-          if coverage_pct < threshold:
-              print(f"\n⚠️ Coverage {coverage_pct:.2f}% is below threshold {threshold}%")
-              with open('coverage_status.txt', 'w') as f:
-                  f.write("FAILED")
-          else:
-              print(f"\n✅ Coverage {coverage_pct:.2f}% meets threshold {threshold}%")
-              with open('coverage_status.txt', 'w') as f:
-                  f.write("PASSED")
-          EOF
+          # Calculate coverage using Python script
+          python3 scripts/ci/calculate_coverage.py $COVERAGE_THRESHOLD || true
 
       - name: Extract test failures
         if: always()
@@ -229,122 +163,23 @@ jobs:
           fi
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Generate combined PR comment
+      - name: Generate PR comment
         if: always()
-        run: |
-          COVERAGE=$(cat coverage_result.txt 2>/dev/null || echo "N/A")
-          COVERAGE_STATUS=$(cat coverage_status.txt 2>/dev/null || echo "UNKNOWN")
-          THRESHOLD=$COVERAGE_THRESHOLD
-          
-          {
-            echo "## 🔍 PR Validation Results"
-            echo ""
-            
-            # SwiftLint
-            if [ -f "swiftlint-output.txt" ]; then
-              if grep -q "warning:" swiftlint-output.txt || grep -q "error:" swiftlint-output.txt; then
-                echo "❌ **SwiftLint**: Failed"
-                echo ""
-                echo "<details><summary>⚠️ Click to see SwiftLint violations</summary>"
-                echo ""
-                echo "\`\`\`"
-                cat swiftlint-output.txt | head -30
-                echo "\`\`\`"
-                echo "</details>"
-              else
-                echo "✅ **SwiftLint**: Passed"
-              fi
-            else
-              echo "✅ **SwiftLint**: Passed"
-            fi
-            echo ""
-            
-            # swift-format
-            if [ -f "swiftformat-output.txt" ] && [ -s "swiftformat-output.txt" ]; then
-              echo "❌ **swift-format**: Failed"
-              echo ""
-              echo "<details><summary>⚠️ Click to see formatting issues</summary>"
-              echo ""
-              echo "\`\`\`"
-              cat swiftformat-output.txt | head -30
-              echo "\`\`\`"
-              echo "</details>"
-            else
-              echo "✅ **swift-format**: Passed"
-            fi
-            echo ""
-            
-            # Build (always passes if we reach this job)
-            echo "✅ **Build**: Passed"
-            echo ""
-            
-            # Tests
-            if [ "$TESTS_FAILED" == "true" ]; then
-              echo "❌ **Unit Tests**: Failed"
-              echo ""
-              echo "<details><summary>🔴 Click to see test failures</summary>"
-              echo ""
-              echo "\`\`\`"
-              echo "$TEST_ERRORS"
-              echo "\`\`\`"
-              echo ""
-              echo "**Full logs**: [View in Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-              echo "</details>"
-            else
-              echo "✅ **Unit Tests**: Passed"
-            fi
-            echo ""
-            
-            # Coverage
-            if [ "$COVERAGE" == "N/A" ] || [ "$COVERAGE" == "0.00" ]; then
-              echo "⚠️ **Coverage**: Could not calculate (tests may have failed)"
-              echo ""
-              echo "_Coverage reporting requires successful test execution_"
-            elif [ "$COVERAGE_STATUS" == "FAILED" ]; then
-              echo "❌ **Coverage**: ${COVERAGE}% (threshold: ${THRESHOLD}%)"
-              echo ""
-              echo "⚠️ Coverage is below the required threshold. Please add tests for:"
-              echo "- ViewModels"
-              echo "- Repositories"
-              echo "- Services"
-            elif [ "$COVERAGE_STATUS" == "PASSED" ]; then
-              echo "✅ **Coverage**: ${COVERAGE}% (threshold: ${THRESHOLD}%)"
-            else
-              echo "⚠️ **Coverage**: Could not calculate"
-            fi
-            echo ""
-            
-            # Overall status
-            if [ "$TESTS_FAILED" == "true" ] || [ "$COVERAGE_STATUS" == "FAILED" ]; then
-              echo "---"
-              echo "## ⚠️ Action Required"
-              echo ""
-              if [ "$TESTS_FAILED" == "true" ]; then
-                echo "1. 🔴 **Fix test failures** (see details above)"
-              fi
-              if [ "$COVERAGE_STATUS" == "FAILED" ]; then
-                echo "2. 📊 **Increase code coverage** to at least ${THRESHOLD}%"
-              fi
-              echo ""
-              echo "Then push your changes to trigger checks again."
-            else
-              echo "---"
-              echo "## 🎉 All Checks Passed!"
-              echo ""
-              echo "Great work! Your code meets all quality standards."
-            fi
-            
-            echo ""
-            echo "---"
-            echo "*Excluded from coverage: SwiftUI Views, Components, Models, App setup, Test files, Generated files*"
-          } > pr-comment.md
+        run: python3 scripts/ci/report_pr_results.py
 
       - name: Comment on PR
         uses: actions/github-script@v7
-        if: always()
+        if: always() && hashFiles('pr-comment.md') != ''
         with:
           script: |
             const fs = require('fs');
+            
+            // Check if comment file exists
+            if (!fs.existsSync('pr-comment.md')) {
+              console.log('⚠️ pr-comment.md not found, skipping PR comment');
+              return;
+            }
+            
             const comment = fs.readFileSync('pr-comment.md', 'utf8');
             
             // Find existing bot comment
@@ -354,12 +189,12 @@ jobs:
               issue_number: context.issue.number,
             });
             
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('PR Validation Results')
+            const botComment = comments.find(c => 
+              c.user.type === 'Bot' && c.body.includes('PR Validation Results')
             );
             
             if (botComment) {
+              console.log(`Updating existing comment ${botComment.id}`);
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -367,6 +202,7 @@ jobs:
                 body: comment
               });
             } else {
+              console.log('Creating new comment');
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
