@@ -41,7 +41,7 @@ class AgentClient:
             pr_number: Pull request number
             thread_id: Thread identifier
             command: Command type ('ask', 'plan', 'implement')
-            context: Context markdown
+            context: Full context markdown (used for new sessions or fallback)
 
         Returns:
             Tuple of (response, status_code)
@@ -50,7 +50,7 @@ class AgentClient:
         work_dir = self.config.log_dir / f".agent-work-{thread_id}"
         work_dir.mkdir(parents=True, exist_ok=True)
 
-        # Save context
+        # Save full context (for debugging/fallback)
         context_file = work_dir / "context.md"
         context_file.write_text(context)
 
@@ -64,7 +64,8 @@ class AgentClient:
             return f"Failed to checkout branch: {e}", 1
 
         # Build instructions
-        instructions = self.build_instructions(pr_number, thread_id, command, branch)
+        is_new_session = not self.thread_manager.get_session_id(thread_id)
+        instructions = self.build_instructions(pr_number, thread_id, command, branch, is_new_session)
         instructions_file = work_dir / "instructions.md"
         instructions_file.write_text(instructions)
 
@@ -83,16 +84,45 @@ class AgentClient:
         request_file = work_dir / "agent-request.json"
         request_file.write_text(json.dumps(request_data, indent=2))
 
+        # Check if we have an existing session
+        session_id = self.thread_manager.get_session_id(thread_id)
+        
+        # Determine context to use based on session existence
+        if session_id:
+            # Resuming session - use minimal context (just new message)
+            logger.info("Resuming session - using minimal context (new message only)")
+            thread = self.thread_manager.load_thread(thread_id)
+            if thread and thread.messages:
+                # Get the last user message (the new one just added)
+                last_message = thread.messages[-1]
+                if last_message.role == "user":
+                    minimal_context = f"New request from {last_message.author}:\n\n{last_message.content}"
+                    if last_message.location:
+                        minimal_context = f"**Location**: `{last_message.location}`\n\n" + minimal_context
+                    if last_message.code_snippet:
+                        minimal_context += f"\n\n```\n{last_message.code_snippet}\n```"
+                    context_to_use = minimal_context
+                else:
+                    # Fallback to full context if last message isn't from user
+                    logger.warning("Last message is not from user, using full context")
+                    context_to_use = context
+            else:
+                # Fallback to full context if can't get thread
+                logger.warning("Could not load thread, using full context")
+                context_to_use = context
+        else:
+            # New session - use full context
+            logger.info("Creating new session - using full context")
+            context_to_use = context
+
         # Try to invoke Cursor CLI
         logger.info(f"Invoking Cursor agent in '{command}' mode")
 
         # Combine instructions and context
-        combined_prompt = f"# Instructions\n\n{instructions}\n\n---\n\n# Context\n\n{context}"
+        combined_prompt = f"# Instructions\n\n{instructions}\n\n---\n\n# Context\n\n{context_to_use}"
         combined_file = work_dir / "combined-prompt.md"
         combined_file.write_text(combined_prompt)
 
-        # Try session resumption first
-        session_id = self.thread_manager.get_session_id(thread_id)
         response = ""
         status = 0
 
@@ -105,7 +135,10 @@ class AgentClient:
                 response_file.write_text(f"SUCCESS: {response}")
                 return response, 0
             except Exception as e:
-                logger.warning(f"Session resume failed: {e}, creating new session")
+                logger.warning(f"Session resume failed: {e}, creating new session with full context")
+                # Rebuild with full context for fallback
+                combined_prompt = f"# Instructions\n\n{instructions}\n\n---\n\n# Context\n\n{context}"
+                combined_file.write_text(combined_prompt)
 
         # Create new session
         try:
@@ -119,22 +152,94 @@ class AgentClient:
         except subprocess.CalledProcessError as e:
             error_output = e.stderr if e.stderr else e.stdout if e.stdout else str(e)
             
-            # Check for specific errors
+            # Check for specific errors and provide detailed diagnostics
             if "resource_exhausted" in str(error_output).lower():
                 logger.error("Cursor API quota exhausted or rate limited")
-                error_msg = "Cursor API quota exhausted. Please wait or upgrade your plan."
+                error_msg = (
+                    "Cursor API quota exhausted or rate limited.\n"
+                    "Solutions:\n"
+                    "- Wait for quota to reset\n"
+                    "- Upgrade your Cursor plan\n"
+                    "- Check API key configuration"
+                )
+            elif "authentication" in str(error_output).lower() or "unauthorized" in str(error_output).lower():
+                logger.error("Cursor authentication failed")
+                error_msg = (
+                    "Cursor authentication failed.\n"
+                    "Solutions:\n"
+                    "- Verify CURSOR_API_KEY environment variable is set\n"
+                    "- Check API key is valid: cursor auth status\n"
+                    "- Re-authenticate: cursor auth login"
+                )
+            elif "not found" in str(error_output).lower() or "no such file" in str(error_output).lower():
+                logger.error("Cursor CLI or files not found")
+                error_msg = (
+                    "Cursor CLI or required files not found.\n"
+                    "Solutions:\n"
+                    "- Install Cursor CLI: https://cursor.sh/cli\n"
+                    "- Verify cursor is in PATH: which cursor\n"
+                    "- Check file permissions"
+                )
             else:
                 logger.error(f"Cursor invocation failed: {error_output}")
-                error_msg = f"Cursor CLI error: {error_output}"
+                error_msg = (
+                    f"Cursor CLI error:\n{error_output}\n\n"
+                    f"Check logs for details: {work_dir}"
+                )
             
             response_file = work_dir / "agent-response.txt"
             response_file.write_text(f"FAILED: {error_msg}")
             return error_msg, 1
-        except Exception as e:
-            logger.error(f"Cursor invocation failed: {e}")
+        except FileNotFoundError as e:
+            # Cursor CLI not installed or not in PATH
+            logger.error(f"Cursor CLI not found: {e}")
+            error_msg = (
+                "Cursor CLI not found in PATH.\n"
+                "Installation required:\n"
+                "1. Install Cursor: https://cursor.sh\n"
+                "2. Install CLI: cursor --install-cli\n"
+                "3. Verify: cursor --version\n"
+                f"4. See instructions: {instructions_file}"
+            )
             response_file = work_dir / "agent-response.txt"
             response_file.write_text("PENDING_MANUAL_INVOCATION")
-            return f"Manual invocation required. See: {instructions_file}", 2
+            return error_msg, 2
+        except PermissionError as e:
+            # Permission issues with files or Cursor CLI
+            logger.error(f"Permission error: {e}")
+            error_msg = (
+                "Permission denied when invoking Cursor CLI.\n"
+                "Solutions:\n"
+                "- Check file permissions on cursor executable\n"
+                "- Verify write permissions in work directory\n"
+                f"- Work directory: {work_dir}\n"
+                f"- See instructions: {instructions_file}"
+            )
+            response_file = work_dir / "agent-response.txt"
+            response_file.write_text("PENDING_MANUAL_INVOCATION")
+            return error_msg, 2
+        except Exception as e:
+            # Catch-all for unexpected errors
+            logger.error(f"Unexpected error during Cursor invocation: {e}", exc_info=True)
+            import traceback
+            error_details = traceback.format_exc()
+            
+            error_msg = (
+                f"Unexpected error occurred:\n{str(e)}\n\n"
+                f"Error type: {type(e).__name__}\n"
+                f"Work directory: {work_dir}\n"
+                f"Instructions: {instructions_file}\n"
+                f"Context: {context_file}\n\n"
+                f"Full traceback saved to logs."
+            )
+            
+            # Save detailed error to file
+            error_file = work_dir / "error.log"
+            error_file.write_text(f"Error: {str(e)}\n\nTraceback:\n{error_details}")
+            
+            response_file = work_dir / "agent-response.txt"
+            response_file.write_text("PENDING_MANUAL_INVOCATION")
+            return error_msg, 2
 
     def checkout_pr_branch(self, branch: str) -> None:
         """
@@ -160,7 +265,7 @@ class AgentClient:
             raise
 
     def build_instructions(
-        self, pr_number: int, thread_id: str, command: str, branch: str
+        self, pr_number: int, thread_id: str, command: str, branch: str, is_new_session: bool = True
     ) -> str:
         """
         Build instructions from templates
@@ -170,6 +275,7 @@ class AgentClient:
             thread_id: Thread identifier
             command: Command type
             branch: Branch name
+            is_new_session: Whether this is a new session (include header) or resumed (skip header)
 
         Returns:
             Formatted instructions
@@ -181,12 +287,15 @@ class AgentClient:
 
         # Read templates
         parts = []
+        
+        # Only include header for new sessions
+        template_names = (
+            ["instructions-header.md", f"instructions-{command}.md"]
+            if is_new_session
+            else [f"instructions-{command}.md"]
+        )
 
-        for template_name in [
-            "instructions-header.md",
-            f"instructions-{command}.md",
-            "instructions-footer.md",
-        ]:
+        for template_name in template_names:
             template_file = template_dir / template_name
             if template_file.exists():
                 content = template_file.read_text()
@@ -215,49 +324,18 @@ class AgentClient:
         Returns:
             Agent response
         """
+        logger.info(f"Resuming Cursor session: {session_id}")
         cmd = [
             "cursor",
             "agent",
-            "--session",
-            session_id,
             "--resume",
+            session_id,
             "--print",
-            "--model",
-            self.config.cursor_model,
-        ]
-        
-        # Add API key if configured
-        if self.config.cursor_api_key:
-            cmd.extend(["--api-key", self.config.cursor_api_key])
-        
-        result = subprocess.run(
-            cmd,
-            stdin=open(prompt_file, "r"),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        return result.stdout.strip()
-
-    def _create_new_session(self, prompt_file: Path) -> tuple[str, str | None]:
-        """
-        Create new Cursor session
-
-        Args:
-            prompt_file: File containing prompt
-
-        Returns:
-            Tuple of (response, session_id)
-        """
-        cmd = [
-            "cursor",
-            "agent",
-            "--print",
-            "--model",
-            self.config.cursor_model,
             "--output-format",
             "text",
+            "--model",
+            self.config.cursor_model,
+            "--force",
         ]
         
         # Add API key if configured
@@ -273,12 +351,69 @@ class AgentClient:
         )
 
         response = result.stdout.strip()
+        logger.debug(f"Resume session response length: {len(response)} chars")
+        return response
 
-        # Try to extract session ID from output
-        import re
+    def _create_new_session(self, prompt_file: Path) -> tuple[str, str | None]:
+        """
+        Create new Cursor session
 
-        session_match = re.search(r"Session[:\s]+([a-zA-Z0-9-]+)", response)
-        session_id = session_match.group(1) if session_match else None
+        Args:
+            prompt_file: File containing prompt
+
+        Returns:
+            Tuple of (response, session_id)
+        """
+        # Step 1: Create a new chat session to get session ID
+        logger.info("Creating new Cursor chat session")
+        create_cmd = ["cursor", "agent", "create-chat"]
+        
+        # Add API key if configured
+        if self.config.cursor_api_key:
+            create_cmd.extend(["--api-key", self.config.cursor_api_key])
+        
+        try:
+            create_result = subprocess.run(
+                create_cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            session_id = create_result.stdout.strip()
+            logger.info(f"Created new session: {session_id}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to create chat session: {e}")
+            raise
+
+        # Step 2: Send the initial message using the new session
+        logger.info(f"Sending initial message to session {session_id}")
+        resume_cmd = [
+            "cursor",
+            "agent",
+            "--resume",
+            session_id,
+            "--print",
+            "--output-format",
+            "text",
+            "--model",
+            self.config.cursor_model,
+            "--force",
+        ]
+        
+        # Add API key if configured
+        if self.config.cursor_api_key:
+            resume_cmd.extend(["--api-key", self.config.cursor_api_key])
+        
+        result = subprocess.run(
+            resume_cmd,
+            stdin=open(prompt_file, "r"),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        response = result.stdout.strip()
+        logger.debug(f"New session response length: {len(response)} chars")
 
         return response, session_id
 

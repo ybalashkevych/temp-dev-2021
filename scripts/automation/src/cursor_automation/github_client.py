@@ -76,10 +76,6 @@ class GithubClient:
             # Get PR-level comments (issue comments)
             issue = self.repo.get_issue(pr_number)
             for comment in issue.get_comments():
-                # Skip bot comments
-                if comment.user.type == "Bot":
-                    continue
-
                 comments.append(
                     Comment(
                         id=comment.id,
@@ -90,19 +86,19 @@ class GithubClient:
                     )
                 )
 
-            # Get inline review comments (only top-level, not replies)
+            # Get inline review comments (including replies)
             for comment in pr.get_review_comments():
-                if comment.in_reply_to_id is None:
-                    location = f"{comment.path}:{comment.line or comment.original_line}"
-                    comments.append(
-                        Comment(
-                            id=comment.id,
-                            type="review",
-                            author=comment.user.login,
-                            body=comment.body,
-                            location=location,
-                        )
+                location = f"{comment.path}:{comment.line or comment.original_line}"
+                comments.append(
+                    Comment(
+                        id=comment.id,
+                        type="review",
+                        author=comment.user.login,
+                        body=comment.body,
+                        location=location,
+                        in_reply_to_id=comment.in_reply_to_id,
                     )
+                )
 
             logger.debug(f"Found {len(comments)} comments in PR #{pr_number}")
             return comments

@@ -448,3 +448,44 @@ Update this document and ARCHITECTURE.md as patterns evolve.
 ---
 
 **Remember:** As an AI agent, you have the advantage of perfect consistency and thorough verification. Use it to maintain the highest code quality standards.
+
+## Build and Test Commands
+
+When implementing changes, use these commands to verify your work:
+
+### Building
+```bash
+# Clean build
+xcodebuild clean build -scheme LiveAssistant
+
+# For faster iteration, just build without clean
+xcodebuild build -scheme LiveAssistant
+```
+
+### Testing
+```bash
+# Run all tests
+xcodebuild test -scheme LiveAssistant -testPlan LiveAssistant
+
+# Run specific test
+xcodebuild test -scheme LiveAssistant -only-testing:LiveAssistantTests/TestClassName/testMethodName
+```
+
+### Quality Checks
+```bash
+# swift-format validation
+xcrun swift-format lint --recursive LiveAssistant
+```
+
+### Iterative Development
+
+When build or test failures occur:
+
+1. Read error output completely and carefully
+2. Identify the specific error (syntax, type mismatch, test assertion failure, etc.)
+3. Understand WHY it failed - don't just fix symptoms
+4. Make targeted fixes
+5. Rebuild/retest
+6. Learn from each failure to avoid repeating mistakes
+
+If you see the same error multiple times, try a different approach - your strategy may be fundamentally flawed.

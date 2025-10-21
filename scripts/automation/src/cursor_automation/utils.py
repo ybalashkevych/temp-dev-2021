@@ -84,8 +84,8 @@ def clean_comment_body(body: str) -> str:
     # Remove suggestion syntax
     body = re.sub(r"```suggestion", "```", body)
 
-    # Remove @mentions with commands
-    body = re.sub(r"@\w+\s+(plan|fix|implement|ask)", "", body)
+    # Remove only the @mention, keep the command and rest of message
+    body = re.sub(r"@\w+\s+", "", body, count=1)
 
     # Strip leading/trailing whitespace
     body = body.strip()

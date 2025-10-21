@@ -117,13 +117,16 @@ class ThreadManager:
         """
         return self.state.comment_to_thread.get(str(comment_id))
 
-    def get_or_create_thread(self, pr_number: int, comment_id: int) -> Thread:
+    def get_or_create_thread(
+        self, pr_number: int, comment_id: int, in_reply_to_id: int | None = None
+    ) -> Thread:
         """
         Get existing thread or create new one for a comment
 
         Args:
             pr_number: Pull request number
             comment_id: Comment ID
+            in_reply_to_id: Parent comment ID if this is a reply
 
         Returns:
             Thread object
@@ -135,6 +138,20 @@ class ThreadManager:
             if thread:
                 logger.debug(f"Using existing thread: {existing_thread_id}")
                 return thread
+
+        # If this is a reply, try to find parent comment's thread
+        if in_reply_to_id:
+            parent_thread_id = self.get_thread_for_comment(in_reply_to_id)
+            if parent_thread_id:
+                thread = self.load_thread(parent_thread_id)
+                if thread:
+                    logger.info(
+                        f"Reusing parent thread {parent_thread_id} for reply comment {comment_id}"
+                    )
+                    # Associate this reply with the same thread
+                    self.state.comment_to_thread[str(comment_id)] = parent_thread_id
+                    self._save_state()
+                    return thread
 
         # Create new thread
         timestamp = int(time.time())

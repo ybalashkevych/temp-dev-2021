@@ -43,6 +43,7 @@ class Comment(BaseModel):
     author: str
     body: str
     location: str = ""
+    in_reply_to_id: Optional[int] = None
 
 
 class AutomationState(BaseModel):

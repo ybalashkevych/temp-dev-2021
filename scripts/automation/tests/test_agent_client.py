@@ -49,7 +49,6 @@ def test_build_instructions(
         "PR: {{PR_NUMBER}}\nThread: {{THREAD_ID}}"
     )
     (template_dir / "instructions-plan.md").write_text("Mode: {{MODE}}")
-    (template_dir / "instructions-footer.md").write_text("Branch: {{BRANCH}}")
 
     agent_client.config.template_dir = template_dir
 
@@ -60,7 +59,6 @@ def test_build_instructions(
     assert "PR: 5" in instructions
     assert "Thread: pr-5-thread-123" in instructions
     assert "Mode: plan" in instructions
-    assert "Branch: feature/test" in instructions
 
 
 @patch("subprocess.run")

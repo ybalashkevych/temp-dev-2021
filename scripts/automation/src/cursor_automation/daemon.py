@@ -137,8 +137,10 @@ class CursorDaemon:
         # Add 👀 reaction (guard against re-processing)
         self.github.add_reaction(comment.id, comment.type, "eyes")
 
-        # Get or create thread
-        thread = self.thread_manager.get_or_create_thread(pr_number, comment.id)
+        # Get or create thread (reuse parent thread if this is a reply)
+        thread = self.thread_manager.get_or_create_thread(
+            pr_number, comment.id, comment.in_reply_to_id
+        )
         logger.info(f"Using thread: {thread.thread_id}")
 
         # Extract code snippet if location provided
@@ -204,9 +206,9 @@ class CursorDaemon:
                 logger.info(f"Posted PR-level comment: {agent_comment_id}")
 
             if agent_comment_id:
-                # Add success reactions (use same type as original comment)
+                # Mark agent response as processed to prevent re-processing
+                self.github.add_reaction(agent_comment_id, comment.type, "eyes")
                 self.github.add_reaction(agent_comment_id, comment.type, "rocket")
-                self.github.add_reaction(agent_comment_id, comment.type, "+1")
 
             # Mark original comment as fully processed
             self.github.add_reaction(comment.id, comment.type, "rocket")
@@ -214,7 +216,45 @@ class CursorDaemon:
             # Update thread status
             self.thread_manager.set_thread_status(thread.thread_id, "completed")
 
+        elif status == 2:
+            # Manual intervention needed
+            logger.warning("Agent requires manual intervention")
+            
+            # Add warning reaction (not failure)
+            self.github.add_reaction(comment.id, comment.type, "confused")
+
+            # Build helpful manual intervention message
+            work_dir = self.config.log_dir / f".agent-work-{thread.thread_id}"
+            instructions_file = work_dir / "instructions.md"
+            context_file = work_dir / "context.md"
+            
+            manual_msg = (
+                f"⚠️ **Manual Intervention Required**\n\n"
+                f"The Cursor agent could not be invoked automatically. This typically happens when:\n\n"
+                f"- Cursor CLI is not available or not configured\n"
+                f"- API quota/rate limits have been reached\n"
+                f"- Authentication issues with Cursor API\n"
+                f"- Unexpected Cursor CLI errors\n\n"
+                f"**Thread**: `{thread.thread_id}`\n\n"
+                f"**To complete this request manually:**\n\n"
+                f"1. Review the instructions: `{instructions_file}`\n"
+                f"2. Review the full context: `{context_file}`\n"
+                f"3. Complete the request in Cursor IDE\n"
+                f"4. Reply to this comment with your response\n\n"
+                f"**Error details:**\n```\n{response}\n```\n\n"
+                f"**Troubleshooting:**\n"
+                f"- Check Cursor CLI: `cursor --version`\n"
+                f"- Verify API key: `echo $CURSOR_API_KEY`\n"
+                f"- Check logs: `{self.config.log_dir}`\n\n"
+                f"*Once resolved, use `@ybalashkevych {command}` to retry*"
+            )
+            self.github.post_comment(pr_number, manual_msg)
+
+            # Update thread status to pending (not failed - can be retried)
+            self.thread_manager.set_thread_status(thread.thread_id, "pending")
+
         else:
+            # Hard failure (status == 1)
             logger.error("Agent failed to process feedback")
             # Add failure reaction
             self.github.add_reaction(comment.id, comment.type, "-1")
@@ -222,11 +262,14 @@ class CursorDaemon:
             # Mark as processed to prevent retry loops (add rocket)
             self.github.add_reaction(comment.id, comment.type, "rocket")
 
-            # Post failure message
+            # Post failure message with error details
             failure_msg = (
                 f"❌ **Processing Failed**\n\n"
-                f"Thread: `{thread.thread_id}`\n"
-                f"Please check the logs for details."
+                f"Thread: `{thread.thread_id}`\n\n"
+                f"**Error:**\n```\n{response}\n```\n\n"
+                f"Check logs for more details: `{self.config.log_dir}`\n\n"
+                f"*This error has been marked as processed. If you want to retry, "
+                f"please investigate the error first, then use `@ybalashkevych {command}` in a new comment.*"
             )
             self.github.post_comment(pr_number, failure_msg)
 
