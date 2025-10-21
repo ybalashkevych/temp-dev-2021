@@ -88,22 +88,32 @@ jobs:
             .build
             DerivedData
             ~/Library/Caches/org.swift.swiftpm
-          key: ${{ runner.os }}-xcode-${{ hashFiles('**/Package.resolved') }}-${{ hashFiles('**/*.swift') }}
+          key: ${{ runner.os }}-xcode-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-xcode-${{ hashFiles('**/Package.resolved') }}-
             ${{ runner.os }}-xcode-
 
       - name: Clean stale build artifacts
         run: |
-          echo "Cleaning DerivedData to remove stale SwiftLint artifacts..."
-          rm -rf DerivedData
+          echo "Cleaning SwiftLint plugin artifacts only..."
+          rm -rf DerivedData/*/Intermediates.noindex/PluginCache 2>/dev/null || true
+          rm -rf DerivedData/*/Intermediates.noindex/com.apple.dt.Xcode.plugin-cache 2>/dev/null || true
+          echo "SwiftLint artifacts cleaned; preserving build cache"
+            
+      - name: Report cache status
+        run: |
+          echo "=== SPM Cache Status ==="
+          if [ -d "$HOME/Library/Caches/org.swift.swiftpm" ]; then
+            du -sh "$HOME/Library/Caches/org.swift.swiftpm" 2>/dev/null || echo "SPM cache exists"
+          else
+            echo "SPM cache is empty (first run)"
+          fi
+          if [ -d "DerivedData" ]; then
+            du -sh DerivedData 2>/dev/null || echo "DerivedData exists"
+          fi
           
       - name: Disable SwiftLint plugin for CI
         run: bash scripts/ci/disable-swiftlint-plugin.sh
           
-      - name: Resolve SPM dependencies
-        run: xcodebuild -resolvePackageDependencies -scheme LiveAssistant -skipPackagePluginValidation -skipMacroValidation
-
       - name: Download Lint Results
         uses: actions/download-artifact@v4
         with:
@@ -112,6 +122,7 @@ jobs:
       - name: Build and run tests with coverage
         id: test
         run: |
+          echo "=== Build Started at $(date) ==="
           xcodebuild test \
             -scheme LiveAssistant \
             -destination 'platform=macOS,arch=arm64' \
@@ -124,6 +135,7 @@ jobs:
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_ALLOWED=YES \
             -resultBundlePath TestResults.xcresult 2>&1 | tee test-output.txt || echo "TESTS_FAILED=true" >> $GITHUB_ENV
+          echo "=== Build Completed at $(date) ==="
         continue-on-error: true
 
       - name: Generate coverage report
