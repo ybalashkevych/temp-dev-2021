@@ -445,6 +445,17 @@ Update this document and ARCHITECTURE.md as patterns evolve.
 - **[.cursor/rules/testing.mdc](testing.mdc)** - Testing patterns
 - **[.cursor/rules/file-content.mdc](file-content.mdc)** - File formatting rules
 
+## Cursor CLI Usage
+
+For detailed information on using the Cursor agent CLI in automation scripts, see:
+- **[.cursor/docs/cursor-cli-guide.mdc](../docs/cursor-cli-guide.mdc)** - Complete Cursor CLI usage patterns
+
+Key points for AI agents:
+- Always use `cursor agent --print --output-format text` for non-interactive scripts
+- Runs synchronously (blocks until complete)
+- Response file safe to read after script exits
+- Never use non-existent parameters like `--file`, `--context`, `--output`
+
 ---
 
 **Remember:** As an AI agent, you have the advantage of perfect consistency and thorough verification. Use it to maintain the highest code quality standards.
