@@ -1,0 +1,88 @@
+name: 🔨 Code Improvement
+description: Suggest a refactoring, performance improvement, or code quality enhancement
+title: "[Improvement]: "
+labels: ["improvement", "technical-debt"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the codebase! Use this template for refactoring, performance improvements, or code quality enhancements.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Improvement Type
+      description: What type of improvement is this?
+      options:
+        - Refactoring - Code restructuring
+        - Performance - Speed or resource optimization
+        - Code Quality - Better patterns or practices
+        - Technical Debt - Addressing legacy issues
+        - Maintainability - Making code easier to maintain
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the current state, proposed improvement, and benefits
+      placeholder: |
+        **Current State:**
+        Currently, the code... (Location: path/to/file.swift)
+        
+        **Proposed Improvement:**
+        The code should be refactored to...
+        
+        **Benefits:**
+        - Improved performance / better maintainability / etc.
+        - Reduced complexity
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-areas
+    attributes:
+      label: Affected Areas
+      description: What parts of the codebase will be affected?
+      placeholder: |
+        - Feature/Module/File 1
+        - Feature/Module/File 2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: breaking-changes
+    attributes:
+      label: Breaking Changes
+      description: Will this improvement introduce breaking changes?
+      options:
+        - "No"
+        - "Yes"
+        - "Possibly"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What criteria must be met for this improvement to be considered complete?
+      placeholder: |
+        - [ ] Code is refactored according to plan
+        - [ ] All tests pass
+        - [ ] Documentation updated
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have identified the specific code that needs improvement
+          required: true
+        - label: I have provided clear acceptance criteria
+          required: true

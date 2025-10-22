@@ -1,0 +1,76 @@
+name: 📝 Documentation Improvement
+description: Suggest improvements to documentation, guides, or comments
+title: "[Docs]: "
+labels: ["documentation"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! Clear docs make LiveAssistant better for everyone.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation needs improvement?
+      options:
+        - README
+        - ARCHITECTURE.md
+        - WORKFLOW.md
+        - API Documentation
+        - Code Comments
+        - Setup Guide
+        - Troubleshooting
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What Needs Improvement
+      description: Describe what documentation needs to be improved and why
+      placeholder: |
+        The current documentation is unclear/missing/outdated because...
+        
+        This would help users/developers by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Which files or sections need to be updated?
+      placeholder: |
+        - File: path/to/file.md (lines 10-25)
+        - Section: "Getting Started"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-changes
+    attributes:
+      label: Proposed Changes
+      description: What should be changed, added, or removed?
+      placeholder: |
+        The documentation should...
+        
+        Suggested content:
+        - Point 1
+        - Point 2
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have checked that this documentation doesn't already exist elsewhere
+          required: true
+        - label: I have provided specific location and proposed changes
+          required: true
+

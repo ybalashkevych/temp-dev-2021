@@ -7,6 +7,7 @@
 //
 
 import Foundation
+
 @testable import LiveAssistant
 
 /// Mock implementation of PermissionServiceProtocol for testing.

@@ -47,7 +47,8 @@ playground.xcworkspace
 .build/
 Packages/
 Package.pins
-Package.resolved
+# Package.resolved should be committed for applications (not libraries)
+# to ensure reproducible builds with exact dependency versions
 SourcePackages/
 xcuserdata/
 derivedDataDirectory/
@@ -120,12 +121,38 @@ temp/
 Crashlytics.framework/
 
 # SwiftGen Generated Files
-LiveAssistant/Core/Generated/
+# Note: For applications with CI plugin issues, commit generated files
+# to ensure they're always available
+# LiveAssistant/Core/Generated/
 
-# Background Automation logs
-logs/*.log
-logs/*.error.log
-.cursor-feedback.txt
+# GitHub Actions
+.github/**/*.log
+TestResults.xcresult
+coverage.json
+coverage_report.txt
+coverage_report_filtered.txt
+coverage_result.txt
+swiftlint-output.txt
+swiftformat-output.txt
+pr-comment.md
+release_notes.md
+
+# Python (for automation scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+*.egg
+
+# Background Automation
+# Note: Root logs/ is unused; actual logs are in scripts/automation/logs/ (with own .gitignore)
+logs/
+
+
 
 # App specific
 # Add any app-specific files or directories to ignore

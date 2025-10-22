@@ -1,5 +1,12 @@
 # LiveAssistant
 
+[![CI](https://github.com/your-username/LiveAssistant/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/LiveAssistant/actions/workflows/ci.yml)
+[![Code Coverage](https://img.shields.io/badge/coverage-20%25-yellow)]()
+[![macOS](https://img.shields.io/badge/macOS-15.0+-blue)]()
+[![Swift](https://img.shields.io/badge/Swift-6.0-orange)]()
+[![Xcode](https://img.shields.io/badge/Xcode-16.0+-blue)]()
+[![License](https://img.shields.io/badge/license-Proprietary-red)]()
+
 A macOS application that provides real-time transcription during job interviews, meetings, and calls with AI-powered assistance for communication.
 
 ## 🏗️ Architecture
@@ -28,6 +35,46 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed documentation.
 - **Xcode**: 16.0.1 or later
 - **Swift**: 6.0
 
+## 🔄 Development Workflow
+
+This project uses a fully automated development workflow with:
+
+- ✅ **Issue-driven development** - All work starts from GitHub Issues
+- ✅ **Automated CI/CD** - GitHub Actions for quality checks
+- ✅ **Code coverage tracking** - Minimum 20% coverage enforced
+- ✅ **Conventional commits** - Consistent PR formatting
+- ✅ **Self-review process** - Comprehensive pre-PR checks
+- ✅ **Mobile-friendly** - Review and approve from anywhere
+
+**For detailed workflow documentation, see [WORKFLOW.md](./WORKFLOW.md)**
+
+### Quick Workflow
+
+1. **Create issue** on GitHub (web/mobile)
+2. **Cursor implements** - Follows architecture rules, writes tests
+3. **Self-review** - Run quality checks before creating PR
+4. **Create PR** - Use GitHub CLI: `gh pr create`
+5. **CI checks** - Automated quality gates
+6. **Review & approve** - From web/mobile
+7. **Merge** - Via GitHub UI or CLI: `gh pr merge`
+
+### Background Daemon (Optional)
+
+The cursor daemon monitors GitHub PRs and automatically responds to feedback.
+
+**Start the daemon:**
+```bash
+cd scripts/automation
+cursor-daemon daemon
+
+# Or with custom settings
+cursor-daemon daemon --poll-interval 30 --log-file logs/daemon.log
+```
+
+The daemon will continuously monitor PRs every 60 seconds and respond to comments automatically.
+
+See [scripts/automation/README.md](scripts/automation/README.md) for full automation documentation.
+
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository
@@ -47,6 +94,16 @@ open LiveAssistant.xcodeproj
 ```
 
 ### 3. Install Development Tools
+
+#### GitHub CLI (Required for workflow automation)
+
+```bash
+# Using Homebrew
+brew install gh
+
+# Authenticate
+gh auth login
+```
 
 #### SwiftLint (Required)
 
@@ -75,7 +132,7 @@ brew install swift-format
 Run the setup script to install git hooks for automatic code quality checks:
 
 ```bash
-./scripts/setup-git-hooks.sh
+./scripts/setup.sh install
 ```
 
 This will:
@@ -157,7 +214,7 @@ func testMyFeature() async throws {
 }
 ```
 
-See [CODING_STANDARDS.md](./CODING_STANDARDS.md) for testing guidelines.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for testing and coding guidelines.
 
 ## 🛠️ Development
 
@@ -188,7 +245,7 @@ swift package --allow-writing-to-package-directory generate-code-for-resources
 
 ### Coding Standards
 
-- Follow [CODING_STANDARDS.md](./CODING_STANDARDS.md)
+- Follow [ARCHITECTURE.md](./ARCHITECTURE.md)
 - Use `@Observable` and `@MainActor` for ViewModels
 - Inject dependencies via protocols
 - Use SwiftGen for type-safe resource access (`Strings`, `Asset`)
@@ -276,11 +333,20 @@ private func registerRepositories() {
 
 ## 📚 Documentation
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Detailed architecture documentation
-- [CODING_STANDARDS.md](./CODING_STANDARDS.md) - Coding standards and best practices
-- [SWIFTGEN.md](./SWIFTGEN.md) - SwiftGen integration and usage guide
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contributing guidelines
-- `.ai/instructions.md` - Project rules for AI assistants
+### Main Documentation
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - **Contributing guide & automated workflow**
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - **Architecture patterns & coding standards**
+- [CHANGELOG.md](./CHANGELOG.md) - Project changelog
+
+### Documentation
+
+All project documentation is in the root directory:
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Architecture patterns and coding standards
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contributing guidelines and workflow
+- [CHANGELOG.md](./CHANGELOG.md) - Project history and changes
+
+For setup, troubleshooting, and contribution guidelines, see the files above.
 
 ## 🤝 Contributing
 
