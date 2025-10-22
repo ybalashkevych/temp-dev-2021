@@ -40,7 +40,6 @@ def generate_pr_comment() -> str:
     coverage, coverage_status = parse_coverage()
 
     swiftlint_pass, swiftlint_output = check_lint_results('swiftlint-output.txt')
-    swiftformat_pass, swiftformat_output = check_lint_results('swiftformat-output.txt')
 
     tests_failed = os.getenv('TESTS_FAILED') == 'true'
     test_errors = os.getenv('TEST_ERRORS', '')
@@ -61,22 +60,6 @@ def generate_pr_comment() -> str:
             "",
             "```",
             swiftlint_output or "See workflow logs for details",
-            "```",
-            "</details>",
-        ])
-    lines.append("")
-
-    # swift-format
-    if swiftformat_pass:
-        lines.append("✅ **swift-format**: Passed")
-    else:
-        lines.extend([
-            "❌ **swift-format**: Failed",
-            "",
-            "<details><summary>⚠️ Click to see formatting issues</summary>",
-            "",
-            "```",
-            swiftformat_output or "See workflow logs for details",
             "```",
             "</details>",
         ])

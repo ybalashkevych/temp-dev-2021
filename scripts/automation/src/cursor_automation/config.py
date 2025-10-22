@@ -17,9 +17,17 @@ class Config(BaseSettings):
     repo_name: str = "temp-dev-2021"
     poll_interval: int = 60
     log_dir: Path = Path(__file__).parent.parent.parent / "logs"  # Absolute path to scripts/automation/logs
-    cursor_model: str = "claude-4.5-haiku"
     cursor_api_key: str = Field(default="")
     template_dir: Path = Path(__file__).parent.parent.parent / "templates"
+
+    # Mode-specific models for optimized performance
+    cursor_model_ask: str = "claude-4.5-haiku-thinking"
+    cursor_model_plan: str = "claude-4.5-sonnet-thinking"
+    cursor_model_implement: str = "claude-4.5-haiku-thinking"
+    cursor_model_fallback: str = "auto"
+
+    # Keep for backwards compatibility
+    cursor_model: str = "auto"
 
     model_config = SettingsConfigDict(
         env_file=".env", env_prefix="CURSOR_", case_sensitive=False

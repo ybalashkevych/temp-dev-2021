@@ -248,7 +248,20 @@ class CursorDaemon:
                 f"- Check logs: `{self.config.log_dir}`\n\n"
                 f"*Once resolved, use `@ybalashkevych {command}` to retry*"
             )
-            self.github.post_comment(pr_number, manual_msg)
+            
+            # Reply in-thread for review comments, PR-level for others
+            if comment.type == "review":
+                agent_comment_id = self.github.post_reply(pr_number, comment.id, manual_msg)
+            else:
+                agent_comment_id = self.github.post_comment(pr_number, manual_msg)
+            
+            # Add reactions to bot comment to mark as processed
+            if agent_comment_id:
+                self.github.add_reaction(agent_comment_id, comment.type, "eyes")
+                self.github.add_reaction(agent_comment_id, comment.type, "rocket")
+            
+            # Mark original comment as processed as well
+            self.github.add_reaction(comment.id, comment.type, "rocket")
 
             # Update thread status to pending (not failed - can be retried)
             self.thread_manager.set_thread_status(thread.thread_id, "pending")
@@ -271,7 +284,17 @@ class CursorDaemon:
                 f"*This error has been marked as processed. If you want to retry, "
                 f"please investigate the error first, then use `@ybalashkevych {command}` in a new comment.*"
             )
-            self.github.post_comment(pr_number, failure_msg)
+            
+            # Reply in-thread for review comments, PR-level for others
+            if comment.type == "review":
+                agent_comment_id = self.github.post_reply(pr_number, comment.id, failure_msg)
+            else:
+                agent_comment_id = self.github.post_comment(pr_number, failure_msg)
+            
+            # Add reactions to bot comment to mark as processed
+            if agent_comment_id:
+                self.github.add_reaction(agent_comment_id, comment.type, "eyes")
+                self.github.add_reaction(agent_comment_id, comment.type, "rocket")
 
             # Update thread status
             self.thread_manager.set_thread_status(thread.thread_id, "failed")

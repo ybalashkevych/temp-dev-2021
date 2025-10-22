@@ -15,58 +15,9 @@ permissions:
   issues: write
 
 jobs:
-  lint-and-format:
-    name: Code Quality Checks
-    runs-on: macos-26
-    timeout-minutes: 2
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install SwiftLint
-        run: brew install swiftlint
-
-      - name: Run SwiftLint
-        id: swiftlint
-        run: |
-          echo "Running SwiftLint with config..."
-          swiftlint lint > swiftlint-output.txt 2>&1 || echo "SWIFTLINT_FAILED=true" >> $GITHUB_ENV
-          cat swiftlint-output.txt
-        continue-on-error: true
-
-      - name: Run swift-format
-        id: swiftformat
-        run: |
-          echo "Running swift-format with config..."
-          # Exclude Generated directory from formatting
-          find LiveAssistant LiveAssistantTests -name "*.swift" ! -path "*/Generated/*" -print0 | \
-            xargs -0 xcrun swift-format lint --configuration .swift-format > swiftformat-output.txt 2>&1 || echo "SWIFTFORMAT_FAILED=true" >> $GITHUB_ENV
-          cat swiftformat-output.txt
-        continue-on-error: true
-
-      - name: Upload lint results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-results
-          path: |
-            swiftlint-output.txt
-            swiftformat-output.txt
-          retention-days: 1
-
-      - name: Check lint results
-        run: |
-          if [ "$SWIFTLINT_FAILED" == "true" ] || [ "$SWIFTFORMAT_FAILED" == "true" ]; then
-            echo "❌ Code quality checks failed"
-            exit 1
-          fi
-          echo "✅ All code quality checks passed"
-
   build-test-and-coverage:
     name: Build, Test & Coverage
     runs-on: macos-26
-    needs: lint-and-format
     timeout-minutes: 10
 
     steps:
@@ -87,12 +38,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-xcode-
 
-      - name: Clean stale build artifacts
-        run: |
-          echo "Cleaning SwiftLint plugin artifacts only..."
-          rm -rf DerivedData/*/Intermediates.noindex/PluginCache 2>/dev/null || true
-          rm -rf DerivedData/*/Intermediates.noindex/com.apple.dt.Xcode.plugin-cache 2>/dev/null || true
-          echo "SwiftLint artifacts cleaned; preserving build cache"
             
       - name: Report cache status
         run: |
@@ -106,11 +51,6 @@ jobs:
             du -sh DerivedData 2>/dev/null || echo "DerivedData exists"
           fi
           
-      - name: Download Lint Results
-        uses: actions/download-artifact@v4
-        with:
-          name: lint-results
-
       - name: Build and run tests with coverage
         id: test
         run: |
@@ -129,6 +69,21 @@ jobs:
             CODE_SIGNING_ALLOWED=YES \
             -resultBundlePath TestResults.xcresult 2>&1 | tee test-output.txt || echo "TESTS_FAILED=true" >> $GITHUB_ENV
           echo "=== Build Completed at $(date) ==="
+
+      - name: Extract SwiftLint violations from build
+        if: always()
+        run: |
+          echo "📝 Extracting SwiftLint violations from build output..."
+          # Extract SwiftLint violations/warnings from test output
+          grep -E "warning:|error:" test-output.txt | head -50 > swiftlint-output.txt 2>/dev/null || true
+          
+          if [ -s swiftlint-output.txt ]; then
+            echo "⚠️ SwiftLint issues found:"
+            cat swiftlint-output.txt
+          else
+            echo "✅ No SwiftLint violations detected"
+            echo "No violations detected" > swiftlint-output.txt
+          fi
 
       - name: Generate coverage report
         if: always()

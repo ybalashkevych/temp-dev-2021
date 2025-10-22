@@ -31,6 +31,23 @@ class AgentClient:
         self.thread_manager = thread_manager
         self.github = github
 
+    def _get_model_for_mode(self, command: str) -> str:
+        """
+        Get the appropriate model for the given command mode
+
+        Args:
+            command: Command type ('ask', 'plan', 'implement')
+
+        Returns:
+            Model name to use
+        """
+        models = {
+            "ask": self.config.cursor_model_ask,
+            "plan": self.config.cursor_model_plan,
+            "implement": self.config.cursor_model_implement,
+        }
+        return models.get(command, self.config.cursor_model_fallback)
+
     def invoke_agent(
         self, pr_number: int, thread_id: str, command: str, context: str
     ) -> tuple[str, int]:
@@ -86,7 +103,7 @@ class AgentClient:
 
         # Check if we have an existing session
         session_id = self.thread_manager.get_session_id(thread_id)
-        
+
         # Determine context to use based on session existence
         if session_id:
             # Resuming session - use minimal context (just new message)
@@ -129,7 +146,7 @@ class AgentClient:
         if session_id:
             logger.info(f"Attempting to resume session: {session_id}")
             try:
-                response = self._resume_session(session_id, combined_file)
+                response = self._resume_session(session_id, combined_file, command)
                 logger.info("Session resumed successfully")
                 response_file = work_dir / "agent-response.txt"
                 response_file.write_text(f"SUCCESS: {response}")
@@ -142,7 +159,7 @@ class AgentClient:
 
         # Create new session
         try:
-            response, new_session_id = self._create_new_session(combined_file)
+            response, new_session_id = self._create_new_session(combined_file, command)
             if new_session_id:
                 self.thread_manager.store_session_id(thread_id, new_session_id)
             logger.info("Cursor agent completed successfully")
@@ -151,7 +168,7 @@ class AgentClient:
             return response, 0
         except subprocess.CalledProcessError as e:
             error_output = e.stderr if e.stderr else e.stdout if e.stdout else str(e)
-            
+
             # Check for specific errors and provide detailed diagnostics
             if "resource_exhausted" in str(error_output).lower():
                 logger.error("Cursor API quota exhausted or rate limited")
@@ -186,7 +203,7 @@ class AgentClient:
                     f"Cursor CLI error:\n{error_output}\n\n"
                     f"Check logs for details: {work_dir}"
                 )
-            
+
             response_file = work_dir / "agent-response.txt"
             response_file.write_text(f"FAILED: {error_msg}")
             return error_msg, 1
@@ -223,7 +240,7 @@ class AgentClient:
             logger.error(f"Unexpected error during Cursor invocation: {e}", exc_info=True)
             import traceback
             error_details = traceback.format_exc()
-            
+
             error_msg = (
                 f"Unexpected error occurred:\n{str(e)}\n\n"
                 f"Error type: {type(e).__name__}\n"
@@ -232,11 +249,11 @@ class AgentClient:
                 f"Context: {context_file}\n\n"
                 f"Full traceback saved to logs."
             )
-            
+
             # Save detailed error to file
             error_file = work_dir / "error.log"
             error_file.write_text(f"Error: {str(e)}\n\nTraceback:\n{error_details}")
-            
+
             response_file = work_dir / "agent-response.txt"
             response_file.write_text("PENDING_MANUAL_INVOCATION")
             return error_msg, 2
@@ -287,7 +304,7 @@ class AgentClient:
 
         # Read templates
         parts = []
-        
+
         # Only include header for new sessions
         template_names = (
             ["instructions-header.md", f"instructions-{command}.md"]
@@ -313,18 +330,22 @@ class AgentClient:
 
         return "\n\n".join(parts)
 
-    def _resume_session(self, session_id: str, prompt_file: Path) -> str:
+    def _resume_session(self, session_id: str, prompt_file: Path, command: str) -> str:
         """
-        Resume existing Cursor session
+        Resume existing Cursor session with mode-specific model
 
         Args:
             session_id: Cursor session ID
             prompt_file: File containing prompt
+            command: Command type ('ask', 'plan', 'implement')
 
         Returns:
             Agent response
         """
         logger.info(f"Resuming Cursor session: {session_id}")
+        model = self._get_model_for_mode(command)
+        logger.info(f"Using model for '{command}' mode: {model}")
+
         cmd = [
             "cursor",
             "agent",
@@ -334,14 +355,14 @@ class AgentClient:
             "--output-format",
             "text",
             "--model",
-            self.config.cursor_model,
+            model,
             "--force",
         ]
-        
+
         # Add API key if configured
         if self.config.cursor_api_key:
             cmd.extend(["--api-key", self.config.cursor_api_key])
-        
+
         result = subprocess.run(
             cmd,
             stdin=open(prompt_file, "r"),
@@ -354,12 +375,13 @@ class AgentClient:
         logger.debug(f"Resume session response length: {len(response)} chars")
         return response
 
-    def _create_new_session(self, prompt_file: Path) -> tuple[str, str | None]:
+    def _create_new_session(self, prompt_file: Path, command: str) -> tuple[str, str | None]:
         """
-        Create new Cursor session
+        Create new Cursor session with mode-specific model
 
         Args:
             prompt_file: File containing prompt
+            command: Command type ('ask', 'plan', 'implement')
 
         Returns:
             Tuple of (response, session_id)
@@ -367,11 +389,11 @@ class AgentClient:
         # Step 1: Create a new chat session to get session ID
         logger.info("Creating new Cursor chat session")
         create_cmd = ["cursor", "agent", "create-chat"]
-        
+
         # Add API key if configured
         if self.config.cursor_api_key:
             create_cmd.extend(["--api-key", self.config.cursor_api_key])
-        
+
         try:
             create_result = subprocess.run(
                 create_cmd,
@@ -387,6 +409,9 @@ class AgentClient:
 
         # Step 2: Send the initial message using the new session
         logger.info(f"Sending initial message to session {session_id}")
+        model = self._get_model_for_mode(command)
+        logger.info(f"Using model for '{command}' mode: {model}")
+
         resume_cmd = [
             "cursor",
             "agent",
@@ -396,14 +421,14 @@ class AgentClient:
             "--output-format",
             "text",
             "--model",
-            self.config.cursor_model,
+            model,
             "--force",
         ]
-        
+
         # Add API key if configured
         if self.config.cursor_api_key:
             resume_cmd.extend(["--api-key", self.config.cursor_api_key])
-        
+
         result = subprocess.run(
             resume_cmd,
             stdin=open(prompt_file, "r"),
