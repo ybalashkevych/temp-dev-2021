@@ -106,9 +106,6 @@ jobs:
             du -sh DerivedData 2>/dev/null || echo "DerivedData exists"
           fi
           
-      - name: Disable SwiftLint plugin for CI
-        run: bash scripts/ci/disable-swiftlint-plugin.sh
-          
       - name: Download Lint Results
         uses: actions/download-artifact@v4
         with:

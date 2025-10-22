@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		5A07D2002E9BD76700C66231 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = 5A07D1FF2E9BD76700C66231 /* Swinject */; };
-		5A07D2032E9BD78100C66231 /* SwiftLintFramework in Frameworks */ = {isa = PBXBuildFile; productRef = 5A07D2022E9BD78100C66231 /* SwiftLintFramework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,7 +57,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5A07D2032E9BD78100C66231 /* SwiftLintFramework in Frameworks */,
 				5A07D2002E9BD76700C66231 /* Swinject in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -108,6 +106,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5A07D1CE2E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistant" */;
 			buildPhases = (
+				5AD9F2282EA97BC700A196EE /* Swiftlint */,
 				5A07D2382E9C132F00C66231 /* SwiftGen */,
 				5A07D2372E9C131E00C66231 /* Swift Format */,
 				5A07D1A72E9BC4DA00C66231 /* Sources */,
@@ -117,7 +116,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				5A6A87A42EA3B3BE0032D3D6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				5A07D1AD2E9BC4DA00C66231 /* LiveAssistant */,
@@ -125,7 +123,6 @@
 			name = LiveAssistant;
 			packageProductDependencies = (
 				5A07D1FF2E9BD76700C66231 /* Swinject */,
-				5A07D2022E9BD78100C66231 /* SwiftLintFramework */,
 			);
 			productName = LiveAssistant;
 			productReference = 5A07D1AB2E9BC4DA00C66231 /* LiveAssistant.app */;
@@ -135,6 +132,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5A07D1D12E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistantTests" */;
 			buildPhases = (
+				5AD9F2292EA97D0600A196EE /* Swiftlint */,
 				5ACA92C52EA1B6DB001A9AB0 /* SwiftFormat */,
 				5A07D1B62E9BC4DC00C66231 /* Sources */,
 				5A07D1B72E9BC4DC00C66231 /* Frameworks */,
@@ -143,7 +141,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				5A6A87A62EA3B3C30032D3D6 /* PBXTargetDependency */,
 				5A07D1BC2E9BC4DC00C66231 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
@@ -160,15 +157,15 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5A07D1D42E9BC4DC00C66231 /* Build configuration list for PBXNativeTarget "LiveAssistantUITests" */;
 			buildPhases = (
+				5AD9F22A2EA97D1900A196EE /* Swiftlint */,
+				5ACA92C62EA1B6F6001A9AB0 /* SwiftFormat */,
 				5A07D1C02E9BC4DC00C66231 /* Sources */,
 				5A07D1C12E9BC4DC00C66231 /* Frameworks */,
 				5A07D1C22E9BC4DC00C66231 /* Resources */,
-				5ACA92C62EA1B6F6001A9AB0 /* SwiftFormat */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				5A6A87A82EA3B3C70032D3D6 /* PBXTargetDependency */,
 				5A07D1C62E9BC4DC00C66231 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
@@ -215,7 +212,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				5A07D1FE2E9BD76700C66231 /* XCRemoteSwiftPackageReference "Swinject" */,
-				5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5A07D1AC2E9BC4DA00C66231 /* Products */;
@@ -335,6 +331,63 @@
 			shellPath = /bin/sh;
 			shellScript = "if [ \"${CONFIGURATION}\" == \"Debug\" ]; then\n    # Auto-fix formatting issues (exclude SwiftGen generated files)\n    find \"${SRCROOT}/LiveAssistant\" -name \"*.swift\" -not -path \"*/Generated/*\" -print0 | xargs -0 xcrun swift-format format --in-place 2>&1\n    echo \"✅ swift-format auto-fixed all files\"\nfi\n";
 		};
+		5AD9F2282EA97BC700A196EE /* Swiftlint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = Swiftlint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [[ \"$(uname -m)\" == arm64 ]]\nthen\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif command -v swiftlint >/dev/null 2>&1\nthen\n    swiftlint\nelse\n    echo \"warning: `swiftlint` command not found - See https://github.com/realm/SwiftLint#installation for installation instructions.\"\nfi\n";
+		};
+		5AD9F2292EA97D0600A196EE /* Swiftlint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = Swiftlint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [[ \"$(uname -m)\" == arm64 ]]\nthen\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif command -v swiftlint >/dev/null 2>&1\nthen\n    swiftlint\nelse\n    echo \"warning: `swiftlint` command not found - See https://github.com/realm/SwiftLint#installation for installation instructions.\"\nfi\n";
+		};
+		5AD9F22A2EA97D1900A196EE /* Swiftlint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = Swiftlint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [[ \"$(uname -m)\" == arm64 ]]\nthen\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif command -v swiftlint >/dev/null 2>&1\nthen\n    swiftlint\nelse\n    echo \"warning: `swiftlint` command not found - See https://github.com/realm/SwiftLint#installation for installation instructions.\"\nfi\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -371,18 +424,6 @@
 			isa = PBXTargetDependency;
 			target = 5A07D1AA2E9BC4DA00C66231 /* LiveAssistant */;
 			targetProxy = 5A07D1C52E9BC4DC00C66231 /* PBXContainerItemProxy */;
-		};
-		5A6A87A42EA3B3BE0032D3D6 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 5A6A87A32EA3B3BE0032D3D6 /* SwiftLintBuildToolPlugin */;
-		};
-		5A6A87A62EA3B3C30032D3D6 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 5A6A87A52EA3B3C30032D3D6 /* SwiftLintBuildToolPlugin */;
-		};
-		5A6A87A82EA3B3C70032D3D6 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 5A6A87A72EA3B3C70032D3D6 /* SwiftLintBuildToolPlugin */;
 		};
 /* End PBXTargetDependency section */
 
@@ -707,14 +748,6 @@
 				minimumVersion = 2.10.0;
 			};
 		};
-		5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/realm/SwiftLint.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.61.0;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -722,26 +755,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5A07D1FE2E9BD76700C66231 /* XCRemoteSwiftPackageReference "Swinject" */;
 			productName = Swinject;
-		};
-		5A07D2022E9BD78100C66231 /* SwiftLintFramework */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
-			productName = SwiftLintFramework;
-		};
-		5A6A87A32EA3B3BE0032D3D6 /* SwiftLintBuildToolPlugin */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
-			productName = "plugin:SwiftLintBuildToolPlugin";
-		};
-		5A6A87A52EA3B3C30032D3D6 /* SwiftLintBuildToolPlugin */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
-			productName = "plugin:SwiftLintBuildToolPlugin";
-		};
-		5A6A87A72EA3B3C70032D3D6 /* SwiftLintBuildToolPlugin */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 5A07D2012E9BD78100C66231 /* XCRemoteSwiftPackageReference "SwiftLint" */;
-			productName = "plugin:SwiftLintBuildToolPlugin";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
