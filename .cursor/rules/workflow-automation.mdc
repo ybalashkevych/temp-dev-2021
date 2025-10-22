@@ -193,36 +193,6 @@ Closes #42"
 - Before switching focus to different part of implementation
 - After fixing review feedback (separate commit)
 
-**Pushing commits reliably:**
-
-To avoid push failures due to stale tracking refs, always follow this pattern:
-
-```bash
-# 1. Fetch to sync tracking refs
-git fetch origin
-
-# 2. Verify branch state
-git status
-
-# 3. Push with explicit branch
-git push origin <branch-name>
-
-# 4. Verify push succeeded
-git status  # Should show "up to date"
-git log origin/<branch-name>..HEAD  # Should be empty
-```
-
-**Why this matters:**
-- Git's local tracking refs can become stale, causing push to report "Everything up-to-date" when commits are actually ahead
-- Running `git fetch origin` before pushing synchronizes the tracking refs
-- Always verify push success by checking that no commits remain ahead of origin
-
-**If push fails with "Everything up-to-date" but you have commits:**
-1. Run `git fetch origin` to update tracking refs
-2. Check `git status` - should show commits ahead
-3. Run `git push origin <branch-name>` again
-4. Verify with `git log origin/<branch-name>..HEAD` (should be empty)
-
 ### 6. PR Creation
 
 Create PR using GitHub CLI:
