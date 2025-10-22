@@ -28,9 +28,9 @@ This document provides comprehensive guidelines for contributing to LiveAssistan
 
 ## Prerequisites
 
-1. **macOS** 14.0 or later
-2. **Xcode** 16.0.1 or later
-3. **Swift** 6.0
+1. **macOS** 26.0 or later
+2. **Xcode** 26.0.1 or later
+3. **Swift** 6.2
 4. **SwiftLint**: `brew install swiftlint`
 5. **swift-format**: Included with Xcode (`xcrun swift-format --version`)
 6. **GitHub CLI**: `brew install gh` (for automation)
