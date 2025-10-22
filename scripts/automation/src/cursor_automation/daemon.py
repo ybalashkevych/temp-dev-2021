@@ -148,15 +148,41 @@ class CursorDaemon:
         function_name = ""
         if comment.location:
             parts = comment.location.split(":")
+            file_path = ""
+            line_num = None
+            end_line = None
+            
             if len(parts) == 2:
+                # Format: file:line
                 file_path, line_str = parts
                 try:
                     line_num = int(line_str)
-                    code_snippet, function_name = (
-                        self.thread_manager.extract_code_snippet(file_path, line_num)
-                    )
                 except ValueError:
                     pass
+            elif len(parts) >= 3:
+                # Format could be: startLine:endLine:file or file:startLine:endLine
+                # Try: startLine:endLine:file (both first parts are digits)
+                if parts[0].isdigit() and parts[1].isdigit():
+                    try:
+                        line_num = int(parts[0])
+                        end_line = int(parts[1])
+                        file_path = ":".join(parts[2:])  # Re-join path in case it has colons
+                    except (ValueError, IndexError):
+                        pass
+                else:
+                    # Format: file:startLine:endLine
+                    try:
+                        file_path = parts[0]
+                        line_num = int(parts[1])
+                        if len(parts) > 2:
+                            end_line = int(parts[2])
+                    except (ValueError, IndexError):
+                        pass
+            
+            if file_path and line_num:
+                code_snippet, function_name = (
+                    self.thread_manager.extract_code_snippet(file_path, line_num, end_line=end_line)
+                )
 
         # Add user message to thread
         user_message = Message(

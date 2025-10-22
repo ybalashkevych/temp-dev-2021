@@ -222,15 +222,16 @@ class ThreadManager:
         logger.debug(f"Stored session ID for thread {thread_id}")
 
     def extract_code_snippet(
-        self, file_path: str, line_num: int, context_lines: int = 10
+        self, file_path: str, line_num: int, end_line: int | None = None, context_lines: int = 10
     ) -> tuple[str, str]:
         """
         Extract code snippet around a line with context
 
         Args:
             file_path: Path to source file
-            line_num: Line number to extract around
-            context_lines: Number of lines before/after
+            line_num: Starting line number to extract
+            end_line: Optional ending line number for range (if None, uses context_lines)
+            context_lines: Number of lines before/after for single-line mode
 
         Returns:
             Tuple of (code_snippet, function_name)
@@ -244,8 +245,14 @@ class ThreadManager:
                 lines = f.readlines()
 
             total_lines = len(lines)
-            start = max(0, line_num - context_lines - 1)
-            end = min(total_lines, line_num + context_lines)
+            
+            # Determine range
+            if end_line:
+                start = max(0, line_num - 1)
+                end = min(total_lines, end_line)
+            else:
+                start = max(0, line_num - context_lines - 1)
+                end = min(total_lines, line_num + context_lines)
 
             # Build snippet with line numbers and marker
             snippet_lines = []
