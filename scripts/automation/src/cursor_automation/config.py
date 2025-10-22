@@ -17,7 +17,7 @@ class Config(BaseSettings):
     repo_name: str = "temp-dev-2021"
     poll_interval: int = 60
     log_dir: Path = Path(__file__).parent.parent.parent / "logs"  # Absolute path to scripts/automation/logs
-    cursor_model: str = "claude-4.5-sonnet"
+    cursor_model: str = "claude-4.5-haiku"
     cursor_api_key: str = Field(default="")
     template_dir: Path = Path(__file__).parent.parent.parent / "templates"
 

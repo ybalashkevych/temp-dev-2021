@@ -122,7 +122,7 @@ jobs:
             -scheme LiveAssistant \
             -destination 'platform=macOS,arch=arm64' \
             -testPlan LiveAssistant \
-            -enableCodeCoverage NO \
+            -enableCodeCoverage YES \
             -configuration Debug \
             -derivedDataPath "$DERIVED_DATA_PATH" \
             -skipPackagePluginValidation \
