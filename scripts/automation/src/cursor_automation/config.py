@@ -21,9 +21,9 @@ class Config(BaseSettings):
     template_dir: Path = Path(__file__).parent.parent.parent / "templates"
 
     # Mode-specific models for optimized performance
-    cursor_model_ask: str = "claude-4.5-haiku-thinking"
-    cursor_model_plan: str = "claude-4.5-sonnet-thinking"
-    cursor_model_implement: str = "claude-4.5-haiku-thinking"
+    cursor_model_ask: str = "sonnet-4.5"
+    cursor_model_plan: str = "sonnet-4.5-thinking"
+    cursor_model_implement: str = "sonnet-4.5"
     cursor_model_fallback: str = "auto"
 
     # Keep for backwards compatibility
